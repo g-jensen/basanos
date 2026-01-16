@@ -20,9 +20,9 @@ func (result *ContainsResult) Format() string {
 	var output strings.Builder
 
 	if result.Passed {
-		output.WriteString("PASS: needle found in haystack\n")
+		output.WriteString("PASS: substring found\n")
 	} else {
-		output.WriteString("FAIL: needle not found in haystack\n")
+		output.WriteString("FAIL: substring not found\n")
 		output.WriteString("──────────────────────────────────\n")
 		output.WriteString("Looking for:\n")
 		output.WriteString("  " + strings.ReplaceAll(result.Needle, "\n", "\n  ") + "\n")
