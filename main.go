@@ -50,7 +50,7 @@ Options:
   -s, --spec DIR      Spec directory (default: spec)
   -o, --output SINK   Output sink (default: files)
                       Can be specified multiple times
-                      Formats: json, files, files:PATH
+                      Formats: json, files, files:PATH, junit
   -f, --filter PAT    Filter specs by path pattern
   -h, --help          Show this help
   -v, --version       Show version`)

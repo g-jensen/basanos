@@ -111,7 +111,7 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 		"RUN_OUTPUT":      path.Join(scenarioOutput, "_run"),
 	})
 
-	runner.emit(eventpkg.NewScenarioEnterEvent(runner.runID, scenarioPath, scenario.Name))
+	runner.emit(eventpkg.NewScenarioEnterEvent(runner.runID, scenarioPath, scenario.Name, time.Now()))
 
 	runner.runHooks(scenarioPath, "before_each", ctx.beforeEachHooks, scenarioEnv)
 
@@ -129,7 +129,7 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 	if passed {
 		status = "pass"
 	}
-	runner.emit(eventpkg.NewScenarioExitEvent(runner.runID, scenarioPath, status))
+	runner.emit(eventpkg.NewScenarioExitEvent(runner.runID, scenarioPath, status, time.Now()))
 
 	if passed {
 		runner.passed++
@@ -226,7 +226,7 @@ func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRo
 		"CONTEXT_OUTPUT": contextOutput,
 	}))
 
-	runner.emit(eventpkg.NewContextEnterEvent(runner.runID, specTree.Path, specTree.Context.Name))
+	runner.emit(eventpkg.NewContextEnterEvent(runner.runID, specTree.Path, specTree.Context.Name, time.Now()))
 
 	runner.runHook(specTree.Path, "before", specTree.Context.Before, env)
 
@@ -247,7 +247,7 @@ func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRo
 		runner.runTree(child, ctx.specRoot, ctx.outputRoot, env)
 	}
 
-	runner.emit(eventpkg.NewContextExitEvent(runner.runID, specTree.Path))
+	runner.emit(eventpkg.NewContextExitEvent(runner.runID, specTree.Path, time.Now()))
 
 	return nil
 }
@@ -271,7 +271,7 @@ func (runner *Runner) RunWithID(runID string, specTree *tree.SpecTree) error {
 		status = "fail"
 	}
 
-	runner.emit(eventpkg.NewRunEndEvent(runID, status, runner.passed, runner.failed))
+	runner.emit(eventpkg.NewRunEndEvent(runID, status, runner.passed, runner.failed, time.Now()))
 
 	return err
 }

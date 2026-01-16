@@ -184,9 +184,11 @@ basanos -s ./my-specs
 basanos -o files              # Write to runs/ directory (default)
 basanos -o files:./output     # Write to custom directory
 basanos -o json               # NDJSON to stdout
+basanos -o junit              # JUnit XML to stdout
 
 # Multiple outputs
 basanos -o files -o json
+basanos -o files -o junit     # Files for debugging, JUnit for CI
 
 # Filter by path pattern
 basanos -f "api/*"
@@ -241,6 +243,22 @@ The `json` sink emits NDJSON events to stdout:
 {"event":"scenario_exit","run_id":"...","path":"api/login","status":"pass"}
 {"event":"context_exit","run_id":"...","path":"api"}
 {"event":"run_end","run_id":"...","status":"pass","passed":5,"failed":0}
+```
+
+### JUnit Sink
+
+The `junit` sink outputs JUnit XML format for CI integration:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="7" failures="0">
+  <testsuite name="api" tests="3" failures="0">
+    <testcase name="Health check" classname="api" time="0.100"/>
+    <testcase name="Login" classname="api" time="0.250">
+      <failure message="test failed"/>
+    </testcase>
+  </testsuite>
+</testsuites>
 ```
 
 ### Event Schema

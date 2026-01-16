@@ -17,32 +17,36 @@ func NewRunStartEvent(runID string, timestamp time.Time) *RunStartEvent {
 }
 
 type ContextEnterEvent struct {
-	Event string `json:"event"`
-	RunID string `json:"run_id,omitempty"`
-	Path  string `json:"path"`
-	Name  string `json:"name"`
+	Event     string    `json:"event"`
+	RunID     string    `json:"run_id,omitempty"`
+	Path      string    `json:"path"`
+	Name      string    `json:"name"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
-func NewContextEnterEvent(runID, path, name string) *ContextEnterEvent {
+func NewContextEnterEvent(runID, path, name string, timestamp time.Time) *ContextEnterEvent {
 	return &ContextEnterEvent{
-		Event: "context_enter",
-		RunID: runID,
-		Path:  path,
-		Name:  name,
+		Event:     "context_enter",
+		RunID:     runID,
+		Path:      path,
+		Name:      name,
+		Timestamp: timestamp,
 	}
 }
 
 type ContextExitEvent struct {
-	Event string `json:"event"`
-	RunID string `json:"run_id,omitempty"`
-	Path  string `json:"path"`
+	Event     string    `json:"event"`
+	RunID     string    `json:"run_id,omitempty"`
+	Path      string    `json:"path"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
-func NewContextExitEvent(runID, path string) *ContextExitEvent {
+func NewContextExitEvent(runID, path string, timestamp time.Time) *ContextExitEvent {
 	return &ContextExitEvent{
-		Event: "context_exit",
-		RunID: runID,
-		Path:  path,
+		Event:     "context_exit",
+		RunID:     runID,
+		Path:      path,
+		Timestamp: timestamp,
 	}
 }
 
@@ -85,34 +89,38 @@ func NewHookEndEvent(runID, path, hook, from string, exitCode int) *HookEndEvent
 }
 
 type ScenarioEnterEvent struct {
-	Event string `json:"event"`
-	RunID string `json:"run_id,omitempty"`
-	Path  string `json:"path"`
-	Name  string `json:"name"`
+	Event     string    `json:"event"`
+	RunID     string    `json:"run_id,omitempty"`
+	Path      string    `json:"path"`
+	Name      string    `json:"name"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
-func NewScenarioEnterEvent(runID, path, name string) *ScenarioEnterEvent {
+func NewScenarioEnterEvent(runID, path, name string, timestamp time.Time) *ScenarioEnterEvent {
 	return &ScenarioEnterEvent{
-		Event: "scenario_enter",
-		RunID: runID,
-		Path:  path,
-		Name:  name,
+		Event:     "scenario_enter",
+		RunID:     runID,
+		Path:      path,
+		Name:      name,
+		Timestamp: timestamp,
 	}
 }
 
 type ScenarioExitEvent struct {
-	Event  string `json:"event"`
-	RunID  string `json:"run_id,omitempty"`
-	Path   string `json:"path"`
-	Status string `json:"status"`
+	Event     string    `json:"event"`
+	RunID     string    `json:"run_id,omitempty"`
+	Path      string    `json:"path"`
+	Status    string    `json:"status"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
-func NewScenarioExitEvent(runID, path, status string) *ScenarioExitEvent {
+func NewScenarioExitEvent(runID, path, status string, timestamp time.Time) *ScenarioExitEvent {
 	return &ScenarioExitEvent{
-		Event:  "scenario_exit",
-		RunID:  runID,
-		Path:   path,
-		Status: status,
+		Event:     "scenario_exit",
+		RunID:     runID,
+		Path:      path,
+		Status:    status,
+		Timestamp: timestamp,
 	}
 }
 
@@ -217,19 +225,21 @@ func NewTimeoutEvent(runID, path, phase, limit string) *TimeoutEvent {
 }
 
 type RunEndEvent struct {
-	Event  string `json:"event"`
-	RunID  string `json:"run_id"`
-	Status string `json:"status"`
-	Passed int    `json:"passed"`
-	Failed int    `json:"failed"`
+	Event     string    `json:"event"`
+	RunID     string    `json:"run_id"`
+	Status    string    `json:"status"`
+	Passed    int       `json:"passed"`
+	Failed    int       `json:"failed"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
-func NewRunEndEvent(runID, status string, passed, failed int) *RunEndEvent {
+func NewRunEndEvent(runID, status string, passed, failed int, timestamp time.Time) *RunEndEvent {
 	return &RunEndEvent{
-		Event:  "run_end",
-		RunID:  runID,
-		Status: status,
-		Passed: passed,
-		Failed: failed,
+		Event:     "run_end",
+		RunID:     runID,
+		Status:    status,
+		Passed:    passed,
+		Failed:    failed,
+		Timestamp: timestamp,
 	}
 }

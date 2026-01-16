@@ -67,6 +67,9 @@ func Run(opts RunOptions) error {
 			}
 			sinks = append(sinks, sink.NewFileSink(writableFS, runID))
 		}
+		if strings.HasPrefix(output, "junit") {
+			sinks = append(sinks, sink.NewJunitSink(opts.Stdout))
+		}
 	}
 	r := runner.NewRunner(opts.Executor, sinks...)
 	r.Filter = opts.Config.Filter

@@ -238,6 +238,32 @@ scenarios:
 	assert.True(t, foundRunStdout, "Expected to find _run/stdout file, got: %v", files)
 }
 
+func TestRun_UsesJunitSink(t *testing.T) {
+	memFS := memfs.NewMemoryFS()
+	memFS.AddDir("spec")
+	memFS.AddFile("spec/context.yaml", []byte(`name: "Test"
+scenarios:
+  - id: test
+    name: "Test scenario"
+    run:
+      command: "echo hello"
+      timeout: "10s"
+`))
+
+	var buf bytes.Buffer
+	opts := RunOptions{
+		Config:     &Config{SpecDir: "spec", Outputs: []string{"junit"}},
+		FileSystem: memFS,
+		Executor:   &FakeExecutor{},
+		Stdout:     &buf,
+	}
+
+	err := Run(opts)
+
+	require.NoError(t, err)
+	assert.Contains(t, buf.String(), "<testsuites")
+}
+
 func TestRun_UsesFilter(t *testing.T) {
 	memFS := memfs.NewMemoryFS()
 	memFS.AddDir("spec")

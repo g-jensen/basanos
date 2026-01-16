@@ -68,12 +68,16 @@
         },
         "run_id": {
           "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
         }
       },
       "required": [
         "event",
         "path",
-        "name"
+        "name",
+        "timestamp"
       ],
       "type": "object"
     },
@@ -88,11 +92,15 @@
         },
         "run_id": {
           "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
         }
       },
       "required": [
         "event",
-        "path"
+        "path",
+        "timestamp"
       ],
       "type": "object"
     },
@@ -192,6 +200,9 @@
         },
         "status": {
           "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
         }
       },
       "required": [
@@ -199,7 +210,8 @@
         "run_id",
         "status",
         "passed",
-        "failed"
+        "failed",
+        "timestamp"
       ],
       "type": "object"
     },
@@ -237,12 +249,16 @@
         },
         "run_id": {
           "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
         }
       },
       "required": [
         "event",
         "path",
-        "name"
+        "name",
+        "timestamp"
       ],
       "type": "object"
     },
@@ -260,12 +276,16 @@
         },
         "status": {
           "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
         }
       },
       "required": [
         "event",
         "path",
-        "status"
+        "status",
+        "timestamp"
       ],
       "type": "object"
     },

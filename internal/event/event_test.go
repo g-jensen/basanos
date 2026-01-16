@@ -27,7 +27,9 @@ func TestRunStartEvent_JSON(t *testing.T) {
 }
 
 func TestContextEnterEvent_JSON(t *testing.T) {
-	event := NewContextEnterEvent("run-123", "basic_http", "Basic HTTP")
+	timestamp := time.Date(2026, 1, 15, 14, 30, 22, 0, time.UTC)
+
+	event := NewContextEnterEvent("run-123", "basic_http", "Basic HTTP", timestamp)
 
 	data, err := json.Marshal(event)
 	require.NoError(t, err)
@@ -40,10 +42,13 @@ func TestContextEnterEvent_JSON(t *testing.T) {
 	assert.Equal(t, "run-123", result["run_id"])
 	assert.Equal(t, "basic_http", result["path"])
 	assert.Equal(t, "Basic HTTP", result["name"])
+	assert.Equal(t, "2026-01-15T14:30:22Z", result["timestamp"])
 }
 
 func TestContextExitEvent_JSON(t *testing.T) {
-	event := NewContextExitEvent("run-123", "basic_http")
+	timestamp := time.Date(2026, 1, 15, 14, 35, 45, 0, time.UTC)
+
+	event := NewContextExitEvent("run-123", "basic_http", timestamp)
 
 	data, err := json.Marshal(event)
 	require.NoError(t, err)
@@ -55,6 +60,7 @@ func TestContextExitEvent_JSON(t *testing.T) {
 	assert.Equal(t, "context_exit", result["event"])
 	assert.Equal(t, "run-123", result["run_id"])
 	assert.Equal(t, "basic_http", result["path"])
+	assert.Equal(t, "2026-01-15T14:35:45Z", result["timestamp"])
 }
 
 func TestHookStartEvent_JSON(t *testing.T) {
@@ -109,7 +115,9 @@ func TestHookEndEvent_JSON(t *testing.T) {
 }
 
 func TestScenarioEnterEvent_JSON(t *testing.T) {
-	event := NewScenarioEnterEvent("run-123", "basic_http/login", "Login works")
+	timestamp := time.Date(2026, 1, 15, 14, 40, 10, 0, time.UTC)
+
+	event := NewScenarioEnterEvent("run-123", "basic_http/login", "Login works", timestamp)
 
 	data, err := json.Marshal(event)
 	require.NoError(t, err)
@@ -122,10 +130,13 @@ func TestScenarioEnterEvent_JSON(t *testing.T) {
 	assert.Equal(t, "run-123", result["run_id"])
 	assert.Equal(t, "basic_http/login", result["path"])
 	assert.Equal(t, "Login works", result["name"])
+	assert.Equal(t, "2026-01-15T14:40:10Z", result["timestamp"])
 }
 
 func TestScenarioExitEvent_JSON(t *testing.T) {
-	event := NewScenarioExitEvent("run-123", "basic_http/login", "pass")
+	timestamp := time.Date(2026, 1, 15, 14, 42, 30, 0, time.UTC)
+
+	event := NewScenarioExitEvent("run-123", "basic_http/login", "pass", timestamp)
 
 	data, err := json.Marshal(event)
 	require.NoError(t, err)
@@ -138,6 +149,7 @@ func TestScenarioExitEvent_JSON(t *testing.T) {
 	assert.Equal(t, "run-123", result["run_id"])
 	assert.Equal(t, "basic_http/login", result["path"])
 	assert.Equal(t, "pass", result["status"])
+	assert.Equal(t, "2026-01-15T14:42:30Z", result["timestamp"])
 }
 
 func TestOutputEvent_JSON(t *testing.T) {
@@ -208,7 +220,9 @@ func TestTimeoutEvent_JSON(t *testing.T) {
 }
 
 func TestRunEndEvent_JSON(t *testing.T) {
-	event := NewRunEndEvent("2026-01-15_143022", "fail", 12, 2)
+	timestamp := time.Date(2026, 1, 15, 14, 45, 0, 0, time.UTC)
+
+	event := NewRunEndEvent("2026-01-15_143022", "fail", 12, 2, timestamp)
 
 	data, err := json.Marshal(event)
 	require.NoError(t, err)
@@ -222,6 +236,7 @@ func TestRunEndEvent_JSON(t *testing.T) {
 	assert.Equal(t, "fail", result["status"])
 	assert.Equal(t, float64(12), result["passed"])
 	assert.Equal(t, float64(2), result["failed"])
+	assert.Equal(t, "2026-01-15T14:45:00Z", result["timestamp"])
 }
 
 func TestScenarioRunStartEvent_JSON(t *testing.T) {
