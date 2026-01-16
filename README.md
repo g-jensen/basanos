@@ -3,8 +3,6 @@
 > **basanos** (βάσανος) — *noun, Ancient Greek*
 >
 > A touchstone; a dark stone used to test the purity of gold or silver by the streak left on it when rubbed with the metal.
->
-> *The system under test is the metal; the acceptance suite is the basanos.*
 
 ---
 
@@ -99,6 +97,11 @@ scenarios:
   - id: unique_id
     name: "Human readable name"
     
+    # Leaf scenarios can have their own before/after
+    before:
+      run: ./setup-test-data.sh
+      timeout: 5s
+    
     run:
       command: curl -s http://localhost:${PORT}/api/endpoint
       timeout: 30s
@@ -106,10 +109,20 @@ scenarios:
     assertions:
       - command: assert_equals expected.fixture ${SCENARIO_OUTPUT}/stdout
       - command: assert_equals 0 ${SCENARIO_OUTPUT}/exit_code
+    
+    after:
+      run: ./cleanup-test-data.sh
+      timeout: 5s
 
-  # Scenarios can nest
+  # Scenarios can nest into groups
   - id: group_id
     name: "Grouped scenarios"
+    
+    # Groups can have before_each/after_each (run for each descendant leaf)
+    before_each:
+      run: ./reset-state.sh
+      timeout: 3s
+    
     scenarios:
       - id: nested_scenario
         run:
@@ -118,6 +131,15 @@ scenarios:
         assertions:
           - command: assert_contains "nested" ${SCENARIO_OUTPUT}/stdout
 ```
+
+### Lifecycle Hooks
+
+| Hook | Applies To | When It Runs |
+|------|------------|--------------|
+| `before` | Contexts, groups, leaves | Once when entering this node |
+| `after` | Contexts, groups, leaves | Once when exiting this node |
+| `before_each` | Contexts, groups only | Before each descendant leaf |
+| `after_each` | Contexts, groups only | After each descendant leaf |
 
 ### Lifecycle Execution Order
 
