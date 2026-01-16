@@ -65,11 +65,8 @@ func (runner *Runner) emitOutput(stream, data string) {
 }
 
 func (runner *Runner) exec(command, timeout string, env map[string]string) (int, bool) {
-	expandedCommand := substituteVars(command, env)
-	stdout, stderr, exitCode, err := runner.executor.Execute(expandedCommand, timeout, env)
-	runner.emitOutput("stdout", stdout)
-	runner.emitOutput("stderr", stderr)
-	return exitCode, errors.Is(err, executor.ErrTimeout)
+	_, _, exitCode, timedOut := runner.execCapture(command, timeout, env)
+	return exitCode, timedOut
 }
 
 func (runner *Runner) execCapture(command, timeout string, env map[string]string) (string, string, int, bool) {

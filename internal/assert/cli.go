@@ -38,9 +38,16 @@ func RunCLI(args []string, stdin io.Reader, stdout io.Writer,
 	return 1
 }
 
-func ResolveBothValues(args []string) (string, string, error) {
+func requireTwoArgs(args []string) error {
 	if len(args) != 2 {
-		return "", "", fmt.Errorf("expected 2 arguments, got %d", len(args))
+		return fmt.Errorf("expected 2 arguments, got %d", len(args))
+	}
+	return nil
+}
+
+func ResolveBothValues(args []string) (string, string, error) {
+	if err := requireTwoArgs(args); err != nil {
+		return "", "", err
 	}
 	first, err := ResolveValue(args[0])
 	if err != nil {
@@ -54,15 +61,15 @@ func ResolveBothValues(args []string) (string, string, error) {
 }
 
 func ResolveLiterals(args []string) (string, string, error) {
-	if len(args) != 2 {
-		return "", "", fmt.Errorf("expected 2 arguments, got %d", len(args))
+	if err := requireTwoArgs(args); err != nil {
+		return "", "", err
 	}
 	return args[0], args[1], nil
 }
 
 func ResolveLiteralAndValue(args []string) (string, string, error) {
-	if len(args) != 2 {
-		return "", "", fmt.Errorf("expected 2 arguments, got %d", len(args))
+	if err := requireTwoArgs(args); err != nil {
+		return "", "", err
 	}
 	second, err := ResolveValue(args[1])
 	if err != nil {

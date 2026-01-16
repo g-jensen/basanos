@@ -24,15 +24,7 @@ func NewShellExecutor() *ShellExecutor {
 }
 
 func (e *ShellExecutor) Execute(command string, timeout string, env map[string]string) (string, string, int, error) {
-	duration := parseDuration(timeout)
-	ctx, cancel := context.WithTimeout(context.Background(), duration)
-	defer cancel()
-	cmd := buildCommand(ctx, command, env)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return buildResult(ctx, err, stdout.String(), stderr.String())
+	return e.ExecuteWithStdin(command, timeout, env, "")
 }
 
 func (e *ShellExecutor) ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (string, string, int, error) {

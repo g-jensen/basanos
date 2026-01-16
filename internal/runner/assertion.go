@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"basanos/internal/assert"
 )
 
 type CapturedOutput struct {
@@ -18,13 +20,13 @@ func resolveAssertionArgs(command string, captured CapturedOutput, env map[strin
 		return env[key]
 	})
 
-	parts := strings.Fields(expanded)
-	if len(parts) < 3 {
+	_, args := parseCommandArgs(expanded)
+	if len(args) < 2 {
 		return "", "", fmt.Errorf("assertion command must have executable and 2 args")
 	}
 
-	first = resolveArg(parts[1], captured, env)
-	second = resolveArg(parts[2], captured, env)
+	first = resolveArg(args[0], captured, env)
+	second = resolveArg(args[1], captured, env)
 
 	return first, second, nil
 }
@@ -32,17 +34,80 @@ func resolveAssertionArgs(command string, captured CapturedOutput, env map[strin
 func resolveArg(arg string, captured CapturedOutput, env map[string]string) string {
 	runOutput := env["RUN_OUTPUT"]
 	if runOutput == "" {
-		return arg
+		return resolveFileOrLiteral(arg)
 	}
 
-	switch arg {
-	case runOutput + "/stdout":
-		return captured.Stdout
-	case runOutput + "/stderr":
-		return captured.Stderr
-	case runOutput + "/exit_code":
-		return strconv.Itoa(captured.ExitCode)
-	default:
+	capturedValues := map[string]string{
+		runOutput + "/stdout":    captured.Stdout,
+		runOutput + "/stderr":    captured.Stderr,
+		runOutput + "/exit_code": strconv.Itoa(captured.ExitCode),
+	}
+
+	if value, ok := capturedValues[arg]; ok {
+		return value
+	}
+	return resolveFileOrLiteral(arg)
+}
+
+func resolveFileOrLiteral(arg string) string {
+	value, err := assert.ResolveValue(arg)
+	if err != nil {
 		return arg
 	}
+	return value
+}
+
+func parseCommandArgs(command string) (executable string, args []string) {
+	var result []string
+	var current strings.Builder
+	inDoubleQuote := false
+	inSingleQuote := false
+	escaped := false
+	hasContent := false
+
+	for _, char := range command {
+		if escaped {
+			current.WriteRune(char)
+			escaped = false
+			continue
+		}
+
+		if char == '\\' && inDoubleQuote {
+			escaped = true
+			continue
+		}
+
+		if char == '"' && !inSingleQuote {
+			inDoubleQuote = !inDoubleQuote
+			hasContent = true
+			continue
+		}
+
+		if char == '\'' && !inDoubleQuote {
+			inSingleQuote = !inSingleQuote
+			hasContent = true
+			continue
+		}
+
+		if char == ' ' && !inDoubleQuote && !inSingleQuote {
+			if current.Len() > 0 || hasContent {
+				result = append(result, current.String())
+				current.Reset()
+				hasContent = false
+			}
+			continue
+		}
+
+		current.WriteRune(char)
+	}
+
+	if current.Len() > 0 || hasContent {
+		result = append(result, current.String())
+	}
+
+	if len(result) == 0 {
+		return "", nil
+	}
+
+	return result[0], result[1:]
 }

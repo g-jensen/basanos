@@ -4,55 +4,13 @@ import (
 	"testing"
 
 	"basanos/internal/event"
-	"basanos/internal/executor"
 	"basanos/internal/spec"
+	fakeexec "basanos/internal/testutil/executor"
 	"basanos/internal/tree"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type ExecutedCommand struct {
-	Command string
-	Timeout string
-	Env     map[string]string
-}
-
-type FakeExecutor struct {
-	Commands         []ExecutedCommand
-	Stdout           string
-	Stderr           string
-	DefaultExitCode  int
-	ExitCodes        map[string]int
-	TimeoutCommands  map[string]bool
-	TimeoutExitCodes map[string]int
-	StdinReceived    string
-}
-
-func (f *FakeExecutor) Execute(command string, timeout string, env map[string]string) (stdout, stderr string, exitCode int, err error) {
-	f.Commands = append(f.Commands, ExecutedCommand{Command: command, Timeout: timeout, Env: env})
-	if f.TimeoutCommands != nil && f.TimeoutCommands[command] {
-		exitCode = -1
-		if f.TimeoutExitCodes != nil {
-			if code, ok := f.TimeoutExitCodes[command]; ok {
-				exitCode = code
-			}
-		}
-		return "", "", exitCode, executor.ErrTimeout
-	}
-	exitCode = f.DefaultExitCode
-	if f.ExitCodes != nil {
-		if code, ok := f.ExitCodes[command]; ok {
-			exitCode = code
-		}
-	}
-	return f.Stdout, f.Stderr, exitCode, nil
-}
-
-func (f *FakeExecutor) ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (stdout, stderr string, exitCode int, err error) {
-	f.StdinReceived = stdin
-	return f.Execute(command, timeout, env)
-}
 
 type SpySink struct {
 	Events []any
@@ -156,8 +114,8 @@ func withScenarioCommand(t *tree.SpecTree, cmd, timeout string) *tree.SpecTree {
 	return t
 }
 
-func runSpec(t *testing.T, specTree *tree.SpecTree) (*FakeExecutor, *SpySink) {
-	executor := &FakeExecutor{}
+func runSpec(t *testing.T, specTree *tree.SpecTree) (*fakeexec.FakeExecutor, *SpySink) {
+	executor := &fakeexec.FakeExecutor{}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -167,8 +125,8 @@ func runSpec(t *testing.T, specTree *tree.SpecTree) (*FakeExecutor, *SpySink) {
 	return executor, sink
 }
 
-func runSpecWithOutput(t *testing.T, specTree *tree.SpecTree, stdout, stderr string) (*FakeExecutor, *SpySink) {
-	executor := &FakeExecutor{Stdout: stdout, Stderr: stderr}
+func runSpecWithOutput(t *testing.T, specTree *tree.SpecTree, stdout, stderr string) (*fakeexec.FakeExecutor, *SpySink) {
+	executor := &fakeexec.FakeExecutor{Stdout: stdout, Stderr: stderr}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -461,8 +419,8 @@ func TestRunner_ExecutesNestedScenarios(t *testing.T) {
 	assert.Equal(t, "cmd2", executor.Commands[1].Command)
 }
 
-func runSpecWithID(t *testing.T, runID string, specTree *tree.SpecTree) (*FakeExecutor, *SpySink) {
-	executor := &FakeExecutor{}
+func runSpecWithID(t *testing.T, runID string, specTree *tree.SpecTree) (*fakeexec.FakeExecutor, *SpySink) {
+	executor := &fakeexec.FakeExecutor{}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -507,7 +465,7 @@ func TestRunner_RunWithID_CountsMultiplePassingScenarios(t *testing.T) {
 
 func TestRunner_RunWithID_CountsFailedScenario(t *testing.T) {
 	specTree := newSpecTree("basic")
-	executor := &FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -521,7 +479,7 @@ func TestRunner_RunWithID_CountsFailedScenario(t *testing.T) {
 
 func TestRunner_RunWithID_StatusFailWhenScenarioFails(t *testing.T) {
 	specTree := newSpecTree("basic")
-	executor := &FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -534,7 +492,7 @@ func TestRunner_RunWithID_StatusFailWhenScenarioFails(t *testing.T) {
 
 func TestRunner_ScenarioFailsWhenAssertionFails(t *testing.T) {
 	specTree := withAssertions(newSpecTree("basic"), "assert_equals 0 exit_code")
-	executor := &FakeExecutor{ExitCodes: map[string]int{
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{
 		"test_command":  0,
 		"assert_equals": 1,
 	}}
@@ -597,7 +555,7 @@ func TestRunner_AncestorBeforeEach_AllRun(t *testing.T) {
 func TestRunner_AbortRun_StopsAfterFailure(t *testing.T) {
 	specTree := withTwoScenarios(newSpecTree("basic"))
 	specTree.Context.OnFailure = "abort_run"
-	executor := &FakeExecutor{ExitCodes: map[string]int{"cmd1": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"cmd1": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -609,7 +567,7 @@ func TestRunner_AbortRun_StopsAfterFailure(t *testing.T) {
 func TestRunner_AbortRun_StopsChildContexts(t *testing.T) {
 	specTree := withChildContext(newSpecTree("parent"), "child")
 	specTree.Context.OnFailure = "abort_run"
-	executor := &FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -621,7 +579,7 @@ func TestRunner_AbortRun_StopsChildContexts(t *testing.T) {
 func TestRunner_SkipChildren_SkipsRemainingScenarios(t *testing.T) {
 	specTree := withTwoScenarios(newSpecTree("basic"))
 	specTree.Context.OnFailure = "skip_children"
-	executor := &FakeExecutor{ExitCodes: map[string]int{"cmd1": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"cmd1": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -637,7 +595,7 @@ func TestRunner_SkipChildren_ContinuesSiblingContexts(t *testing.T) {
 	specTree.Children[0].Context.OnFailure = "skip_children"
 	specTree.Children[0].Context.Scenarios[0].Run.Command = "fail_cmd"
 	specTree.Children[1].Context.Scenarios[0].Run.Command = "sibling_cmd"
-	executor := &FakeExecutor{ExitCodes: map[string]int{"fail_cmd": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"fail_cmd": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -730,7 +688,7 @@ func TestRunner_SubstitutesScenarioOutput(t *testing.T) {
 
 func TestRunner_EmitsTimeoutEvent(t *testing.T) {
 	specTree := withScenarioCommand(newSpecTree("basic"), "slow_command", "30s")
-	executor := &FakeExecutor{TimeoutCommands: map[string]bool{"slow_command": true}}
+	executor := &fakeexec.FakeExecutor{TimeoutCommands: map[string]bool{"slow_command": true}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -745,7 +703,7 @@ func TestRunner_EmitsTimeoutEvent(t *testing.T) {
 
 func TestRunner_ScenarioFailsOnTimeout(t *testing.T) {
 	specTree := withScenarioCommand(newSpecTree("basic"), "slow_command", "30s")
-	executor := &FakeExecutor{TimeoutCommands: map[string]bool{"slow_command": true}}
+	executor := &fakeexec.FakeExecutor{TimeoutCommands: map[string]bool{"slow_command": true}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -758,7 +716,7 @@ func TestRunner_ScenarioFailsOnTimeout(t *testing.T) {
 
 func TestRunner_ScenarioFailsOnTimeout_EvenWithZeroExitCode(t *testing.T) {
 	specTree := withScenarioCommand(newSpecTree("basic"), "slow_command", "30s")
-	executor := &FakeExecutor{
+	executor := &fakeexec.FakeExecutor{
 		TimeoutCommands:  map[string]bool{"slow_command": true},
 		TimeoutExitCodes: map[string]int{"slow_command": 0},
 	}
@@ -774,7 +732,7 @@ func TestRunner_ScenarioFailsOnTimeout_EvenWithZeroExitCode(t *testing.T) {
 
 func TestRunner_AllEventsIncludeRunID(t *testing.T) {
 	specTree := withBeforeHook(newSpecTree("basic"), "setup.sh")
-	executor := &FakeExecutor{Stdout: "output\n"}
+	executor := &fakeexec.FakeExecutor{Stdout: "output\n"}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -818,7 +776,7 @@ func TestRunner_FilterByExactPath(t *testing.T) {
 			},
 		},
 	}
-	fakeExecutor := &FakeExecutor{}
+	fakeExecutor := &fakeexec.FakeExecutor{}
 	sink := &SpySink{}
 	runner := NewRunner(fakeExecutor, sink)
 	runner.Filter = "spec/login"
@@ -857,7 +815,7 @@ func TestRunner_FilterByGlobPattern(t *testing.T) {
 			},
 		},
 	}
-	fakeExecutor := &FakeExecutor{}
+	fakeExecutor := &fakeexec.FakeExecutor{}
 	sink := &SpySink{}
 	runner := NewRunner(fakeExecutor, sink)
 	runner.Filter = "spec/api/*"
@@ -937,7 +895,7 @@ func TestRunner_Assertions_UsesProtocolPiping(t *testing.T) {
 	specTree.Context.Scenarios[0].Assertions = []spec.Assertion{
 		{Command: "assert_equals 0 ${RUN_OUTPUT}/exit_code", Timeout: "1s"},
 	}
-	fakeExecutor := &FakeExecutor{Stdout: "hello\n", Stderr: "warning\n"}
+	fakeExecutor := &fakeexec.FakeExecutor{Stdout: "hello\n", Stderr: "warning\n"}
 	sink := &SpySink{}
 	runner := NewRunner(fakeExecutor, sink)
 

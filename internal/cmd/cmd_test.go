@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	fakeexec "basanos/internal/testutil/executor"
 	memfs "basanos/internal/testutil/fs"
 
 	"github.com/stretchr/testify/assert"
@@ -135,25 +136,6 @@ func TestRun_ReturnsNil(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-type ExecutedCommand struct {
-	Command string
-	Timeout string
-	Env     map[string]string
-}
-
-type FakeExecutor struct {
-	Commands []ExecutedCommand
-}
-
-func (f *FakeExecutor) Execute(command string, timeout string, env map[string]string) (stdout, stderr string, exitCode int, err error) {
-	f.Commands = append(f.Commands, ExecutedCommand{Command: command, Timeout: timeout, Env: env})
-	return "", "", 0, nil
-}
-
-func (f *FakeExecutor) ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (stdout, stderr string, exitCode int, err error) {
-	return f.Execute(command, timeout, env)
-}
-
 func TestRun_ExecutesSpec(t *testing.T) {
 	memFS := memfs.NewMemoryFS()
 	memFS.AddDir("spec")
@@ -166,7 +148,7 @@ scenarios:
       timeout: "10s"
 `))
 
-	fakeExec := &FakeExecutor{}
+	fakeExec := &fakeexec.FakeExecutor{}
 	opts := RunOptions{
 		Config:     &Config{SpecDir: "spec", Outputs: []string{"files"}},
 		FileSystem: memFS,
@@ -196,7 +178,7 @@ scenarios:
 	opts := RunOptions{
 		Config:     &Config{SpecDir: "spec", Outputs: []string{"json"}},
 		FileSystem: memFS,
-		Executor:   &FakeExecutor{},
+		Executor:   &fakeexec.FakeExecutor{},
 		Stdout:     &buf,
 	}
 
@@ -222,7 +204,7 @@ scenarios:
 	opts := RunOptions{
 		Config:     &Config{SpecDir: "spec", Outputs: []string{"files"}},
 		FileSystem: memFS,
-		Executor:   &FakeExecutor{},
+		Executor:   &fakeexec.FakeExecutor{},
 		OutputFS:   outputFS,
 	}
 
@@ -258,7 +240,7 @@ scenarios:
 	opts := RunOptions{
 		Config:     &Config{SpecDir: "spec", Outputs: []string{"junit"}},
 		FileSystem: memFS,
-		Executor:   &FakeExecutor{},
+		Executor:   &fakeexec.FakeExecutor{},
 		Stdout:     &buf,
 	}
 
@@ -285,7 +267,7 @@ scenarios:
       timeout: "10s"
 `))
 
-	fakeExec := &FakeExecutor{}
+	fakeExec := &fakeexec.FakeExecutor{}
 	opts := RunOptions{
 		Config:     &Config{SpecDir: "spec", Outputs: []string{"files"}, Filter: "spec/first"},
 		FileSystem: memFS,
