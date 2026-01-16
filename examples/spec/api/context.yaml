@@ -18,5 +18,5 @@ scenarios:
       command: printf "200"
       timeout: 5s
     assertions:
-      - command: ${ASSERT}/assert_equals "200" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_equals "200" ${RUN_OUTPUT}/stdout
         timeout: 1s

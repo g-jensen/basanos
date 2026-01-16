@@ -108,6 +108,7 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 	scenarioOutput := path.Join(ctx.outputRoot, scenarioPath)
 	scenarioEnv := mergeEnv(ctx.env, map[string]string{
 		"SCENARIO_OUTPUT": scenarioOutput,
+		"RUN_OUTPUT":      path.Join(scenarioOutput, "_run"),
 	})
 
 	runner.emit(eventpkg.NewScenarioEnterEvent(runner.runID, scenarioPath, scenario.Name))

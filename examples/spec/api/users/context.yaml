@@ -11,9 +11,9 @@ scenarios:
       command: echo '[{"id":1,"name":"alice"},{"id":2,"name":"bob"}]'
       timeout: 5s
     assertions:
-      - command: ${ASSERT}/assert_contains "alice" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains "alice" ${RUN_OUTPUT}/stdout
         timeout: 1s
-      - command: ${ASSERT}/assert_contains "bob" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains "bob" ${RUN_OUTPUT}/stdout
         timeout: 1s
 
   - id: create
@@ -22,7 +22,7 @@ scenarios:
       command: echo "201 Created"
       timeout: 5s
     assertions:
-      - command: ${ASSERT}/assert_equals ${SPEC_ROOT}/api/users/expected_create.fixture ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_equals ${SPEC_ROOT}/api/users/expected_create.fixture ${RUN_OUTPUT}/stdout
         timeout: 1s
-      - command: ${ASSERT}/assert_equals 0 ${SCENARIO_OUTPUT}/_run/exit_code
+      - command: ${ASSERT}/assert_equals 0 ${RUN_OUTPUT}/exit_code
         timeout: 1s

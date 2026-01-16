@@ -36,7 +36,7 @@ scenarios:
       command: curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/health
       timeout: 5s
     assertions:
-      - command: assert_equals 200 ${SCENARIO_OUTPUT}/_run/stdout
+      - command: assert_equals 200 ${RUN_OUTPUT}/stdout
 ```
 
 Run the specs:
@@ -114,8 +114,8 @@ scenarios:
       timeout: 30s
     
     assertions:
-      - command: assert_equals expected.fixture ${SCENARIO_OUTPUT}/_run/stdout
-      - command: assert_equals 0 ${SCENARIO_OUTPUT}/_run/exit_code
+      - command: assert_equals expected.fixture ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
     
     after:
       run: ./cleanup-test-data.sh
@@ -136,7 +136,7 @@ scenarios:
           command: echo "nested"
           timeout: 5s
         assertions:
-          - command: assert_contains "nested" ${SCENARIO_OUTPUT}/_run/stdout
+          - command: assert_contains "nested" ${RUN_OUTPUT}/stdout
 ```
 
 ### Lifecycle Hooks
@@ -168,6 +168,7 @@ For a leaf scenario, hooks execute in this order:
 | `${SPEC_ROOT}` | All | Root of spec directory |
 | `${CONTEXT_OUTPUT}` | Context hooks | Output directory for current context |
 | `${SCENARIO_OUTPUT}` | Scenario | Output directory for current scenario |
+| `${RUN_OUTPUT}` | Scenario | Shorthand for `${SCENARIO_OUTPUT}/_run` |
 | Custom `env` vars | Inherited | Merged down the tree, child overrides parent |
 
 ## CLI Usage

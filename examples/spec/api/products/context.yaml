@@ -7,9 +7,9 @@ scenarios:
       command: echo '{"products":[{"id":1,"name":"Widget Pro"}],"total":1}'
       timeout: 5s
     assertions:
-      - command: ${ASSERT}/assert_contains "Widget Pro" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains "Widget Pro" ${RUN_OUTPUT}/stdout
         timeout: 1s
-      - command: ${ASSERT}/assert_matches '"total":\s*[1-9]' ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_matches '"total":\s*[1-9]' ${RUN_OUTPUT}/stdout
         timeout: 1s
 
   - id: empty_search
@@ -18,5 +18,5 @@ scenarios:
       command: echo '{"products":[],"total":0}'
       timeout: 5s
     assertions:
-      - command: ${ASSERT}/assert_contains '"total":0' ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains '"total":0' ${RUN_OUTPUT}/stdout
         timeout: 1s

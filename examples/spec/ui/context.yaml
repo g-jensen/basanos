@@ -15,9 +15,9 @@ scenarios:
       command: printf "status:200\ntitle:Welcome to Our Store"
       timeout: 10s
     assertions:
-      - command: ${ASSERT}/assert_contains "status:200" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains "status:200" ${RUN_OUTPUT}/stdout
         timeout: 1s
-      - command: ${ASSERT}/assert_contains "Welcome" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains "Welcome" ${RUN_OUTPUT}/stdout
         timeout: 1s
 
   - id: checkout
@@ -26,7 +26,7 @@ scenarios:
       command: printf "step:cart\nstep:checkout\nstep:payment\nstatus:complete"
       timeout: 30s
     assertions:
-      - command: ${ASSERT}/assert_contains "status:complete" ${SCENARIO_OUTPUT}/_run/stdout
+      - command: ${ASSERT}/assert_contains "status:complete" ${RUN_OUTPUT}/stdout
         timeout: 1s
-      - command: ${ASSERT}/assert_equals 0 ${SCENARIO_OUTPUT}/_run/exit_code
+      - command: ${ASSERT}/assert_equals 0 ${RUN_OUTPUT}/exit_code
         timeout: 1s

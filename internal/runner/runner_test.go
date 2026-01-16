@@ -885,6 +885,17 @@ func TestRunner_ScenarioOutputNoDoubleSlash(t *testing.T) {
 	assert.NotContains(t, scenarioOutput, "//")
 }
 
+func TestRunner_SetsRunOutputEnvVar(t *testing.T) {
+	specTree := newSpecTree("basic_http")
+	specTree.Context.Scenarios[0].ID = "login"
+
+	executor, _ := runSpecWithID(t, "test-run", specTree)
+
+	require.Len(t, executor.Commands, 1)
+	runOutput := executor.Commands[0].Env["RUN_OUTPUT"]
+	assert.Equal(t, "runs/test-run/basic_http/login/_run", runOutput)
+}
+
 func TestRunner_ChildContext_InheritsParentEnv(t *testing.T) {
 	specTree := &tree.SpecTree{
 		Path: "parent",
