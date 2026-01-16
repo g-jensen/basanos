@@ -1,0 +1,10 @@
+name: "E-Commerce Platform"
+description: "Full test suite"
+
+before:
+  run: echo "Starting test database"
+  timeout: "5s"
+
+after:
+  run: echo "Stopping test database"
+  timeout: "5s"

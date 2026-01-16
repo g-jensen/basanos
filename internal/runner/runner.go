@@ -1,0 +1,276 @@
+package runner
+
+import (
+	"errors"
+	"os"
+	"path"
+	"slices"
+	"time"
+
+	eventpkg "basanos/internal/event"
+	"basanos/internal/executor"
+	sinkpkg "basanos/internal/sink"
+	"basanos/internal/spec"
+	"basanos/internal/tree"
+)
+
+func substituteVars(command string, env map[string]string) string {
+	return os.Expand(command, func(key string) string {
+		if value, ok := env[key]; ok {
+			return value
+		}
+		return "${" + key + "}"
+	})
+}
+
+type runContext struct {
+	runID           string
+	beforeEachHooks []*spec.Hook
+	afterEachHooks  []*spec.Hook
+	onFailure       string
+	env             map[string]string
+	specRoot        string
+	outputRoot      string
+}
+
+type Runner struct {
+	executor executor.Executor
+	sinks    []sinkpkg.Sink
+	passed   int
+	failed   int
+	aborted  bool
+	runID    string
+	Filter   string
+}
+
+func NewRunner(exec executor.Executor, sinks ...sinkpkg.Sink) *Runner {
+	return &Runner{
+		executor: exec,
+		sinks:    sinks,
+	}
+}
+
+func (runner *Runner) emit(event any) {
+	for _, sink := range runner.sinks {
+		sink.Emit(event)
+	}
+}
+
+func (runner *Runner) emitOutput(stream, data string) {
+	if data != "" {
+		runner.emit(eventpkg.NewOutputEvent(runner.runID, stream, data))
+	}
+}
+
+func (runner *Runner) exec(command, timeout string, env map[string]string) (int, bool) {
+	expandedCommand := substituteVars(command, env)
+	stdout, stderr, exitCode, err := runner.executor.Execute(expandedCommand, timeout, env)
+	runner.emitOutput("stdout", stdout)
+	runner.emitOutput("stderr", stderr)
+	return exitCode, errors.Is(err, executor.ErrTimeout)
+}
+
+func (runner *Runner) runHook(path, hookName string, hook *spec.Hook, env map[string]string) {
+	if hook == nil {
+		return
+	}
+	runner.emit(eventpkg.NewHookStartEvent(runner.runID, path, "_"+hookName, ""))
+	exitCode, _ := runner.exec(hook.Run, hook.Timeout, env)
+	runner.emit(eventpkg.NewHookEndEvent(runner.runID, path, "_"+hookName, "", exitCode))
+}
+
+func (runner *Runner) runHooks(path, hookName string, hooks []*spec.Hook, env map[string]string) {
+	for _, hook := range hooks {
+		runner.runHook(path, hookName, hook, env)
+	}
+}
+
+func reversed(hooks []*spec.Hook) []*spec.Hook {
+	result := slices.Clone(hooks)
+	slices.Reverse(result)
+	return result
+}
+
+func (runner *Runner) runAssertions(path string, assertions []spec.Assertion, env map[string]string) bool {
+	allPassed := true
+	for index, assertion := range assertions {
+		runner.emit(eventpkg.NewAssertionStartEvent(runner.runID, path, index, assertion.Command))
+		exitCode, _ := runner.exec(assertion.Command, assertion.Timeout, env)
+		runner.emit(eventpkg.NewAssertionEndEvent(runner.runID, path, index, exitCode))
+		if exitCode != 0 {
+			allPassed = false
+		}
+	}
+	return allPassed
+}
+
+func (runner *Runner) runScenario(path string, scenario spec.Scenario, ctx runContext) bool {
+	scenarioOutput := ctx.outputRoot + "/" + path
+	scenarioEnv := mergeEnv(ctx.env, map[string]string{
+		"SCENARIO_OUTPUT": scenarioOutput,
+	})
+
+	runner.emit(eventpkg.NewScenarioEnterEvent(runner.runID, path, scenario.Name))
+
+	runner.runHooks(path, "before_each", ctx.beforeEachHooks, scenarioEnv)
+
+	runner.emit(eventpkg.NewScenarioRunStartEvent(runner.runID, path))
+	exitCode, timedOut := runner.exec(scenario.Run.Command, scenario.Run.Timeout, scenarioEnv)
+	if timedOut {
+		runner.emit(eventpkg.NewTimeoutEvent(runner.runID, path, "run", scenario.Run.Timeout))
+	}
+	runner.emit(eventpkg.NewScenarioRunEndEvent(runner.runID, path, exitCode))
+
+	assertionsPassed := runner.runAssertions(path, scenario.Assertions, scenarioEnv)
+	passed := exitCode == 0 && assertionsPassed && !timedOut
+
+	status := "fail"
+	if passed {
+		status = "pass"
+	}
+	runner.emit(eventpkg.NewScenarioExitEvent(runner.runID, path, status))
+
+	if passed {
+		runner.passed++
+	} else {
+		runner.failed++
+	}
+
+	runner.runHooks(path, "after_each", reversed(ctx.afterEachHooks), scenarioEnv)
+
+	return passed
+}
+
+func (runner *Runner) shouldStopAfterFailure(passed bool, onFailure string) bool {
+	if passed {
+		return false
+	}
+	if onFailure == "abort_run" {
+		runner.aborted = true
+		return true
+	}
+	return onFailure == "skip_children"
+}
+
+func (runner *Runner) matchesFilter(scenarioPath string) bool {
+	if runner.Filter == "" {
+		return true
+	}
+	matched, err := path.Match(runner.Filter, scenarioPath)
+	if err != nil {
+		return scenarioPath == runner.Filter
+	}
+	return matched
+}
+
+func (runner *Runner) executeLeaf(path string, scenario spec.Scenario, ctx runContext) bool {
+	if scenario.Run == nil {
+		return false
+	}
+	if !runner.matchesFilter(path) {
+		return false
+	}
+	passed := runner.runScenario(path, scenario, ctx)
+	return runner.shouldStopAfterFailure(passed, ctx.onFailure)
+}
+
+func (runner *Runner) runScenarios(basePath string, scenarios []spec.Scenario, ctx runContext) {
+	for _, scenario := range scenarios {
+		if runner.aborted {
+			return
+		}
+		path := basePath + "/" + scenario.ID
+
+		if runner.executeLeaf(path, scenario, ctx) {
+			return
+		}
+		runner.runChildScenarios(path, scenario, ctx)
+	}
+}
+
+func mergeEnv(parent, child map[string]string) map[string]string {
+	result := make(map[string]string)
+	for key, value := range parent {
+		result[key] = value
+	}
+	for key, value := range child {
+		result[key] = value
+	}
+	return result
+}
+
+func (runner *Runner) runChildScenarios(path string, scenario spec.Scenario, ctx runContext) {
+	if len(scenario.Scenarios) == 0 {
+		return
+	}
+	childCtx := runContext{
+		beforeEachHooks: append(ctx.beforeEachHooks, scenario.BeforeEach),
+		afterEachHooks:  append(ctx.afterEachHooks, scenario.AfterEach),
+		onFailure:       ctx.onFailure,
+		env:             mergeEnv(ctx.env, scenario.Env),
+		specRoot:        ctx.specRoot,
+		outputRoot:      ctx.outputRoot,
+	}
+	runner.runScenarios(path, scenario.Scenarios, childCtx)
+}
+
+func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRoot string) error {
+	if runner.aborted {
+		return nil
+	}
+
+	contextOutput := outputRoot + "/" + specTree.Path
+	env := mergeEnv(specTree.Context.Env, map[string]string{
+		"SPEC_ROOT":      specRoot,
+		"CONTEXT_OUTPUT": contextOutput,
+	})
+
+	runner.emit(eventpkg.NewContextEnterEvent(runner.runID, specTree.Path, specTree.Context.Name))
+
+	runner.runHook(specTree.Path, "before", specTree.Context.Before, env)
+
+	ctx := runContext{
+		runID:           runner.runID,
+		beforeEachHooks: []*spec.Hook{specTree.Context.BeforeEach},
+		afterEachHooks:  []*spec.Hook{specTree.Context.AfterEach},
+		onFailure:       specTree.Context.OnFailure,
+		env:             env,
+		specRoot:        specRoot,
+		outputRoot:      outputRoot,
+	}
+	runner.runScenarios(specTree.Path, specTree.Context.Scenarios, ctx)
+
+	runner.runHook(specTree.Path, "after", specTree.Context.After, env)
+
+	for _, child := range specTree.Children {
+		runner.runTree(child, ctx.specRoot, ctx.outputRoot)
+	}
+
+	runner.emit(eventpkg.NewContextExitEvent(runner.runID, specTree.Path))
+
+	return nil
+}
+
+func (runner *Runner) Run(specTree *tree.SpecTree) error {
+	return runner.runTree(specTree, specTree.Path, "")
+}
+
+func (runner *Runner) RunWithID(runID string, specTree *tree.SpecTree) error {
+	runner.runID = runID
+	runner.emit(eventpkg.NewRunStartEvent(runID, time.Now()))
+	runner.passed = 0
+	runner.failed = 0
+	runner.aborted = false
+
+	outputRoot := "runs/" + runID
+	err := runner.runTree(specTree, specTree.Path, outputRoot)
+
+	status := "pass"
+	if runner.failed > 0 {
+		status = "fail"
+	}
+
+	runner.emit(eventpkg.NewRunEndEvent(runID, status, runner.passed, runner.failed))
+
+	return err
+}
