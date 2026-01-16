@@ -3,6 +3,9 @@ bin/
 runs/
 custom_output/
 
+# Agent instructions (local only)
+AGENTS.md
+
 # Editor/IDE
 .idea/
 .vscode/
