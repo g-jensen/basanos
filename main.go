@@ -44,7 +44,7 @@ func main() {
 func printHelp() {
 	fmt.Println(`basanos - acceptance test framework
 
-Usage: basanos run [options]
+Usage: basanos [options]
 
 Options:
   -s, --spec DIR      Spec directory (default: spec)

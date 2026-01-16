@@ -1,4 +1,4 @@
-.PHONY: build clean test
+.PHONY: build clean test schema
 
 BIN_DIR := bin
 BINARIES := basanos assert_equals assert_contains assert_matches assert_gt assert_gte assert_lt assert_lte
@@ -18,3 +18,7 @@ clean:
 
 test:
 	go test ./... -count=1
+
+schema:
+	@mkdir -p schema
+	go run ./cmd/gen-schema > schema/events.json

@@ -1,0 +1,387 @@
+{
+  "$defs": {
+    "AssertionEndEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "index",
+        "exit_code"
+      ],
+      "type": "object"
+    },
+    "AssertionStartEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "event": {
+          "type": "string"
+        },
+        "index": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "index",
+        "command"
+      ],
+      "type": "object"
+    },
+    "ContextEnterEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "name"
+      ],
+      "type": "object"
+    },
+    "ContextExitEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path"
+      ],
+      "type": "object"
+    },
+    "HookEndEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "from": {
+          "type": "string"
+        },
+        "hook": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "hook",
+        "exit_code"
+      ],
+      "type": "object"
+    },
+    "HookStartEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "hook": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "hook"
+      ],
+      "type": "object"
+    },
+    "OutputEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "data": {
+          "type": "string"
+        },
+        "event": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "stream": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "stream",
+        "data"
+      ],
+      "type": "object"
+    },
+    "RunEndEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "failed": {
+          "type": "integer"
+        },
+        "passed": {
+          "type": "integer"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "run_id",
+        "status",
+        "passed",
+        "failed"
+      ],
+      "type": "object"
+    },
+    "RunStartEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "run_id",
+        "timestamp"
+      ],
+      "type": "object"
+    },
+    "ScenarioEnterEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "name"
+      ],
+      "type": "object"
+    },
+    "ScenarioExitEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "status"
+      ],
+      "type": "object"
+    },
+    "ScenarioRunEndEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "exit_code"
+      ],
+      "type": "object"
+    },
+    "ScenarioRunStartEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path"
+      ],
+      "type": "object"
+    },
+    "TimeoutEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "phase": {
+          "type": "string"
+        },
+        "run_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event",
+        "path",
+        "phase",
+        "limit"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/RunStartEvent"
+    },
+    {
+      "$ref": "#/$defs/ContextEnterEvent"
+    },
+    {
+      "$ref": "#/$defs/ContextExitEvent"
+    },
+    {
+      "$ref": "#/$defs/HookStartEvent"
+    },
+    {
+      "$ref": "#/$defs/HookEndEvent"
+    },
+    {
+      "$ref": "#/$defs/ScenarioEnterEvent"
+    },
+    {
+      "$ref": "#/$defs/ScenarioExitEvent"
+    },
+    {
+      "$ref": "#/$defs/ScenarioRunStartEvent"
+    },
+    {
+      "$ref": "#/$defs/ScenarioRunEndEvent"
+    },
+    {
+      "$ref": "#/$defs/OutputEvent"
+    },
+    {
+      "$ref": "#/$defs/AssertionStartEvent"
+    },
+    {
+      "$ref": "#/$defs/AssertionEndEvent"
+    },
+    {
+      "$ref": "#/$defs/TimeoutEvent"
+    },
+    {
+      "$ref": "#/$defs/RunEndEvent"
+    }
+  ]
+}
