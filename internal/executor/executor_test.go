@@ -52,3 +52,25 @@ func TestShellExecutor_ReturnsErrTimeoutWhenCommandExceedsTimeout(t *testing.T) 
 
 	assert.True(t, errors.Is(err, ErrTimeout))
 }
+
+func TestExecuteWithStdin_PassesStdinToCommand(t *testing.T) {
+	exec := NewShellExecutor()
+
+	stdout, stderr, exitCode, err := exec.ExecuteWithStdin("cat", "5s", nil, "hello from stdin")
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, exitCode)
+	assert.Equal(t, "hello from stdin", stdout)
+	assert.Empty(t, stderr)
+}
+
+func TestExecuteWithStdin_CommandCanProcessStdin(t *testing.T) {
+	exec := NewShellExecutor()
+
+	stdout, stderr, exitCode, err := exec.ExecuteWithStdin("wc -c", "5s", nil, "12345")
+
+	require.NoError(t, err)
+	assert.Equal(t, 0, exitCode)
+	assert.Contains(t, stdout, "5")
+	assert.Empty(t, stderr)
+}

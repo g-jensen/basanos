@@ -150,6 +150,10 @@ func (f *FakeExecutor) Execute(command string, timeout string, env map[string]st
 	return "", "", 0, nil
 }
 
+func (f *FakeExecutor) ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (stdout, stderr string, exitCode int, err error) {
+	return f.Execute(command, timeout, env)
+}
+
 func TestRun_ExecutesSpec(t *testing.T) {
 	memFS := memfs.NewMemoryFS()
 	memFS.AddDir("spec")

@@ -26,6 +26,7 @@ type FakeExecutor struct {
 	ExitCodes        map[string]int
 	TimeoutCommands  map[string]bool
 	TimeoutExitCodes map[string]int
+	StdinReceived    string
 }
 
 func (f *FakeExecutor) Execute(command string, timeout string, env map[string]string) (stdout, stderr string, exitCode int, err error) {
@@ -46,6 +47,11 @@ func (f *FakeExecutor) Execute(command string, timeout string, env map[string]st
 		}
 	}
 	return f.Stdout, f.Stderr, exitCode, nil
+}
+
+func (f *FakeExecutor) ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (stdout, stderr string, exitCode int, err error) {
+	f.StdinReceived = stdin
+	return f.Execute(command, timeout, env)
 }
 
 type SpySink struct {
@@ -412,8 +418,8 @@ func TestRunner_Assertions_ExecutesAssertionCommands(t *testing.T) {
 
 	require.Len(t, executor.Commands, 3)
 	assert.Equal(t, "test_command", executor.Commands[0].Command)
-	assert.Equal(t, "assert_equals 0 exit_code", executor.Commands[1].Command)
-	assert.Equal(t, "assert_contains expected.txt stdout", executor.Commands[2].Command)
+	assert.Equal(t, "assert_equals", executor.Commands[1].Command)
+	assert.Equal(t, "assert_contains", executor.Commands[2].Command)
 }
 
 func TestRunner_EmitsContextEnterEvent(t *testing.T) {
@@ -529,8 +535,8 @@ func TestRunner_RunWithID_StatusFailWhenScenarioFails(t *testing.T) {
 func TestRunner_ScenarioFailsWhenAssertionFails(t *testing.T) {
 	specTree := withAssertions(newSpecTree("basic"), "assert_equals 0 exit_code")
 	executor := &FakeExecutor{ExitCodes: map[string]int{
-		"test_command":              0,
-		"assert_equals 0 exit_code": 1,
+		"test_command":  0,
+		"assert_equals": 1,
 	}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
@@ -924,4 +930,21 @@ func TestRunner_ChildContext_InheritsParentEnv(t *testing.T) {
 
 	require.Len(t, executor.Commands, 1)
 	assert.Equal(t, "echo from_parent", executor.Commands[0].Command)
+}
+
+func TestRunner_Assertions_UsesProtocolPiping(t *testing.T) {
+	specTree := newSpecTree("basic")
+	specTree.Context.Scenarios[0].Assertions = []spec.Assertion{
+		{Command: "assert_equals 0 ${RUN_OUTPUT}/exit_code", Timeout: "1s"},
+	}
+	fakeExecutor := &FakeExecutor{Stdout: "hello\n", Stderr: "warning\n"}
+	sink := &SpySink{}
+	runner := NewRunner(fakeExecutor, sink)
+
+	runner.RunWithID("test-run", specTree)
+
+	require.GreaterOrEqual(t, len(fakeExecutor.Commands), 2)
+	assertionCmd := fakeExecutor.Commands[1]
+	assert.Equal(t, "assert_equals", assertionCmd.Command)
+	assert.Contains(t, fakeExecutor.StdinReceived, "basanos:1\n")
 }

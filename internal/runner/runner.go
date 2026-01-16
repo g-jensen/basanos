@@ -5,8 +5,10 @@ import (
 	"os"
 	"path"
 	"slices"
+	"strings"
 	"time"
 
+	"basanos/internal/assert"
 	eventpkg "basanos/internal/event"
 	"basanos/internal/executor"
 	sinkpkg "basanos/internal/sink"
@@ -70,6 +72,14 @@ func (runner *Runner) exec(command, timeout string, env map[string]string) (int,
 	return exitCode, errors.Is(err, executor.ErrTimeout)
 }
 
+func (runner *Runner) execCapture(command, timeout string, env map[string]string) (string, string, int, bool) {
+	expandedCommand := substituteVars(command, env)
+	stdout, stderr, exitCode, err := runner.executor.Execute(expandedCommand, timeout, env)
+	runner.emitOutput("stdout", stdout)
+	runner.emitOutput("stderr", stderr)
+	return stdout, stderr, exitCode, errors.Is(err, executor.ErrTimeout)
+}
+
 func (runner *Runner) runHook(path, hookName string, hook *spec.Hook, env map[string]string) {
 	if hook == nil {
 		return
@@ -91,12 +101,35 @@ func reversed(hooks []*spec.Hook) []*spec.Hook {
 	return result
 }
 
-func (runner *Runner) runAssertions(path string, assertions []spec.Assertion, env map[string]string) bool {
+func extractExecutable(command string) string {
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+		return command
+	}
+	return parts[0]
+}
+
+func (runner *Runner) runAssertions(path string, assertions []spec.Assertion, env map[string]string, captured CapturedOutput) bool {
 	allPassed := true
 	for index, assertion := range assertions {
+		executable := extractExecutable(assertion.Command)
+
+		first, second, err := resolveAssertionArgs(assertion.Command, captured, env)
+		if err != nil {
+			runner.emit(eventpkg.NewAssertionStartEvent(runner.runID, path, index, assertion.Command))
+			runner.emit(eventpkg.NewAssertionEndEvent(runner.runID, path, index, 1))
+			allPassed = false
+			continue
+		}
+
+		protocol := assert.BuildProtocol(first, second)
+
 		runner.emit(eventpkg.NewAssertionStartEvent(runner.runID, path, index, assertion.Command))
-		exitCode, _ := runner.exec(assertion.Command, assertion.Timeout, env)
+		stdout, stderr, exitCode, _ := runner.executor.ExecuteWithStdin(executable, assertion.Timeout, env, protocol)
+		runner.emitOutput("stdout", stdout)
+		runner.emitOutput("stderr", stderr)
 		runner.emit(eventpkg.NewAssertionEndEvent(runner.runID, path, index, exitCode))
+
 		if exitCode != 0 {
 			allPassed = false
 		}
@@ -116,13 +149,14 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 	runner.runHooks(scenarioPath, "before_each", ctx.beforeEachHooks, scenarioEnv)
 
 	runner.emit(eventpkg.NewScenarioRunStartEvent(runner.runID, scenarioPath))
-	exitCode, timedOut := runner.exec(scenario.Run.Command, scenario.Run.Timeout, scenarioEnv)
+	stdout, stderr, exitCode, timedOut := runner.execCapture(scenario.Run.Command, scenario.Run.Timeout, scenarioEnv)
 	if timedOut {
 		runner.emit(eventpkg.NewTimeoutEvent(runner.runID, scenarioPath, "run", scenario.Run.Timeout))
 	}
 	runner.emit(eventpkg.NewScenarioRunEndEvent(runner.runID, scenarioPath, exitCode))
 
-	assertionsPassed := runner.runAssertions(scenarioPath, scenario.Assertions, scenarioEnv)
+	captured := CapturedOutput{Stdout: stdout, Stderr: stderr, ExitCode: exitCode}
+	assertionsPassed := runner.runAssertions(scenarioPath, scenario.Assertions, scenarioEnv, captured)
 	passed := exitCode == 0 && assertionsPassed && !timedOut
 
 	status := "fail"

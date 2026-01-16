@@ -28,6 +28,10 @@ func Matches(pattern, target string) *MatchesResult {
 	return result
 }
 
+func (result *MatchesResult) IsPassed() bool {
+	return result.Passed
+}
+
 func (result *MatchesResult) Format() string {
 	if result.Passed {
 		return "PASS: pattern matches target\n"

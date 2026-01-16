@@ -63,6 +63,10 @@ func LessThanOrEqual(left, right string) *NumericResult {
 	return numericCompare(left, right, "<=", func(l, r float64) bool { return l <= r })
 }
 
+func (result *NumericResult) IsPassed() bool {
+	return result.Passed
+}
+
 func (result *NumericResult) Format() string {
 	if result.Passed {
 		return fmt.Sprintf("PASS: %s %s %s\n", result.Left, result.Op, result.Right)

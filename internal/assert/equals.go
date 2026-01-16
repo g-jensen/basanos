@@ -23,6 +23,10 @@ func Equals(expected, actual string) *Result {
 	}
 }
 
+func (result *Result) IsPassed() bool {
+	return result.Passed
+}
+
 func (result *Result) Format() string {
 	var output strings.Builder
 

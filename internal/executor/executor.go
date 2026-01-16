@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -13,6 +14,7 @@ var ErrTimeout = errors.New("command timed out")
 
 type Executor interface {
 	Execute(command string, timeout string, env map[string]string) (stdout, stderr string, exitCode int, err error)
+	ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (stdout, stderr string, exitCode int, err error)
 }
 
 type ShellExecutor struct{}
@@ -27,6 +29,19 @@ func (e *ShellExecutor) Execute(command string, timeout string, env map[string]s
 	defer cancel()
 	cmd := buildCommand(ctx, command, env)
 	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return buildResult(ctx, err, stdout.String(), stderr.String())
+}
+
+func (e *ShellExecutor) ExecuteWithStdin(command string, timeout string, env map[string]string, stdin string) (string, string, int, error) {
+	duration := parseDuration(timeout)
+	ctx, cancel := context.WithTimeout(context.Background(), duration)
+	defer cancel()
+	cmd := buildCommand(ctx, command, env)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdin = strings.NewReader(stdin)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err := cmd.Run()

@@ -16,6 +16,10 @@ func Contains(needle, haystack string) *ContainsResult {
 	}
 }
 
+func (result *ContainsResult) IsPassed() bool {
+	return result.Passed
+}
+
 func (result *ContainsResult) Format() string {
 	var output strings.Builder
 
