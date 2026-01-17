@@ -17,6 +17,12 @@ jobs:
         with:
           go-version: '1.23'
 
+      - name: Cache Go tools
+        uses: actions/cache@v4
+        with:
+          path: ~/go/bin
+          key: go-tools-${{ runner.os }}-go-junit-report-v2
+
       - name: Build
         run: make build
 
@@ -26,7 +32,7 @@ jobs:
           go test ./... -count=1 -v 2>&1 | go-junit-report -set-exit-code > unit-tests.xml
 
       - name: Acceptance Tests
-        run: ./bin/basanos -s spec -o junit > acceptance-tests.xml
+        run: PATH="/tmp/basanos_bin:$PATH" ./bin/basanos -s spec -o junit 2>&1 | tee acceptance-tests.xml
 
       - name: Publish Test Results
         uses: dorny/test-reporter@v1

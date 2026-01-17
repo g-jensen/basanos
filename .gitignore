@@ -16,3 +16,6 @@ AGENTS.md
 
 # OS
 .DS_Store
+
+# CI
+acceptance-tests.xml
