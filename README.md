@@ -335,6 +335,45 @@ Agents generate:
 
 No agent involvement at runtime. Execution is predictable and reproducible.
 
+## Agent Workflow
+
+Basanos includes an agent and skill for AI-assisted spec generation:
+
+```
+agents/
+  spec-writer.md    # Agent: translates requirements into specs
+skills/
+  basanos.md        # Skill: spec format reference
+```
+
+### Using the Spec Writer Agent
+
+The `spec-writer` agent helps you translate requirements into comprehensive test specifications. It probes for edge cases, error conditions, and completeness—then generates valid `context.yaml` files and fixtures.
+
+To use it in your AI tool (Claude, Cursor, etc.):
+
+1. **Load the agent** — Point your tool at `agents/spec-writer.md` or copy its contents as a system prompt
+2. **Describe what you're testing** — Provide requirements, user stories, OpenAPI specs, or just describe the behavior
+3. **Iterate** — The agent will ask clarifying questions, draft specs, and refine based on feedback
+
+The agent will automatically load the `basanos` skill to ensure it generates valid specs.
+
+### Using the Skill Directly
+
+If you're writing specs yourself (or using a different agent), load the `basanos` skill for the complete format reference:
+
+- `skills/basanos.md` — Schema, lifecycle hooks, variables, assertions, and common patterns
+
+This is useful when you want the spec format reference without the full spec-writer workflow.
+
+### IDE Integration
+
+Most AI-enabled editors can load agents and skills from your project:
+
+- **Claude Code / OpenCode** — Agents in `agents/` and skills in `skills/` are auto-discovered
+- **Cursor** — Add to your `.cursorrules` or reference directly in chat
+- **Other tools** — Copy the content into your system prompt or context
+
 ## Development
 
 ```bash
