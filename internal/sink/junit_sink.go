@@ -56,66 +56,66 @@ func NewJunitSink(writer io.Writer) Sink {
 	}
 }
 
-func (s *JunitSink) Emit(evt any) error {
-	switch e := evt.(type) {
+func (sink *JunitSink) Emit(incoming any) error {
+	switch typed := incoming.(type) {
 	case *event.ContextEnterEvent:
-		s.handleContextEnter(e)
+		sink.handleContextEnter(typed)
 	case *event.ScenarioEnterEvent:
-		s.handleScenarioEnter(e)
+		sink.handleScenarioEnter(typed)
 	case *event.ScenarioExitEvent:
-		s.handleScenarioExit(e)
+		sink.handleScenarioExit(typed)
 	case *event.RunEndEvent:
-		return s.handleRunEnd(e)
+		return sink.handleRunEnd(typed)
 	}
 	return nil
 }
 
-func (s *JunitSink) handleContextEnter(e *event.ContextEnterEvent) {
-	s.suites[e.Path] = &junitTestSuite{
-		Name: e.Path,
+func (sink *JunitSink) handleContextEnter(enter *event.ContextEnterEvent) {
+	sink.suites[enter.Path] = &junitTestSuite{
+		Name: enter.Path,
 	}
-	s.suiteOrder = append(s.suiteOrder, e.Path)
+	sink.suiteOrder = append(sink.suiteOrder, enter.Path)
 }
 
-func (s *JunitSink) handleScenarioEnter(e *event.ScenarioEnterEvent) {
-	contextPath := filepath.Dir(e.Path)
-	s.pendingCases[e.Path] = &pendingCase{
-		name:      e.Name,
+func (sink *JunitSink) handleScenarioEnter(enter *event.ScenarioEnterEvent) {
+	contextPath := filepath.Dir(enter.Path)
+	sink.pendingCases[enter.Path] = &pendingCase{
+		name:      enter.Name,
 		classname: contextPath,
-		startTime: e.Timestamp,
+		startTime: enter.Timestamp,
 	}
 }
 
-func (s *JunitSink) handleScenarioExit(e *event.ScenarioExitEvent) {
-	pending := s.pendingCases[e.Path]
-	contextPath := filepath.Dir(e.Path)
-	suite := s.suites[contextPath]
+func (sink *JunitSink) handleScenarioExit(exit *event.ScenarioExitEvent) {
+	pending := sink.pendingCases[exit.Path]
+	contextPath := filepath.Dir(exit.Path)
+	suite := sink.suites[contextPath]
 
-	duration := e.Timestamp.Sub(pending.startTime).Seconds()
+	duration := exit.Timestamp.Sub(pending.startTime).Seconds()
 	testCase := junitTestCase{
 		Name:      pending.name,
 		Classname: pending.classname,
 		Time:      fmt.Sprintf("%.3f", duration),
 	}
 
-	if e.Status == "fail" {
+	if exit.Status == "fail" {
 		testCase.Failure = &junitFailure{Message: "test failed"}
 		suite.Failures++
 	}
 	suite.Cases = append(suite.Cases, testCase)
 	suite.Tests++
 
-	delete(s.pendingCases, e.Path)
+	delete(sink.pendingCases, exit.Path)
 }
 
-func (s *JunitSink) handleRunEnd(e *event.RunEndEvent) error {
+func (sink *JunitSink) handleRunEnd(end *event.RunEndEvent) error {
 	testsuites := junitTestSuites{
-		Tests:    e.Passed + e.Failed,
-		Failures: e.Failed,
+		Tests:    end.Passed + end.Failed,
+		Failures: end.Failed,
 	}
 
-	for _, path := range s.suiteOrder {
-		testsuites.Suites = append(testsuites.Suites, *s.suites[path])
+	for _, path := range sink.suiteOrder {
+		testsuites.Suites = append(testsuites.Suites, *sink.suites[path])
 	}
 
 	output, err := xml.MarshalIndent(testsuites, "", "  ")
@@ -123,10 +123,10 @@ func (s *JunitSink) handleRunEnd(e *event.RunEndEvent) error {
 		return err
 	}
 
-	_, err = s.writer.Write([]byte(xml.Header))
+	_, err = sink.writer.Write([]byte(xml.Header))
 	if err != nil {
 		return err
 	}
-	_, err = s.writer.Write(output)
+	_, err = sink.writer.Write(output)
 	return err
 }

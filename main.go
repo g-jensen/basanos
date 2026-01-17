@@ -52,6 +52,7 @@ Options:
                       Can be specified multiple times
                       Formats: cli, json, files, files:PATH, junit
   -f, --filter PAT    Filter specs by path pattern
+  --verbose           Show context/scenario names with indentation
   -h, --help          Show this help
   -v, --version       Show version`)
 }

@@ -138,8 +138,8 @@ func runSpecWithOutput(t *testing.T, specTree *tree.SpecTree, stdout, stderr str
 
 func findEvents[T any](events []any) []T {
 	var result []T
-	for _, e := range events {
-		if typed, ok := e.(T); ok {
+	for _, event := range events {
+		if typed, ok := event.(T); ok {
 			result = append(result, typed)
 		}
 	}

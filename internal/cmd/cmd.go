@@ -10,17 +10,18 @@ import (
 	"basanos/internal/fs"
 	"basanos/internal/runner"
 	"basanos/internal/sink"
+	"basanos/internal/sink/cli"
 	"basanos/internal/tree"
 )
 
 type stringSlice []string
 
-func (s *stringSlice) String() string {
-	return strings.Join(*s, ",")
+func (slice *stringSlice) String() string {
+	return strings.Join(*slice, ",")
 }
 
-func (s *stringSlice) Set(value string) error {
-	*s = append(*s, value)
+func (slice *stringSlice) Set(value string) error {
+	*slice = append(*slice, value)
 	return nil
 }
 
@@ -30,6 +31,7 @@ type Config struct {
 	Filter      string
 	ShowHelp    bool
 	ShowVersion bool
+	Verbose     bool
 }
 
 type RunOptions struct {
@@ -53,15 +55,14 @@ func Run(opts RunOptions) error {
 	for _, output := range opts.Config.Outputs {
 		sinks = append(sinks, createSink(output, opts, runID))
 	}
-	r := runner.NewRunner(opts.Executor, sinks...)
-	r.Filter = opts.Config.Filter
-	return r.RunWithID(runID, specTree)
+	specRunner := runner.NewRunner(opts.Executor, sinks...)
+	specRunner.Filter = opts.Config.Filter
+	return specRunner.RunWithID(runID, specTree)
 }
 
 var writerSinks = map[string]func(io.Writer) sink.Sink{
 	"json":  sink.NewJsonStreamSink,
 	"junit": sink.NewJunitSink,
-	"cli":   sink.NewCLISink,
 }
 
 func createSink(output string, opts RunOptions, runID string) sink.Sink {
@@ -69,6 +70,9 @@ func createSink(output string, opts RunOptions, runID string) sink.Sink {
 		if strings.HasPrefix(output, prefix) {
 			return factory(opts.Stdout)
 		}
+	}
+	if strings.HasPrefix(output, "cli") {
+		return cli.NewReporter(opts.Stdout, opts.Config.Verbose, true)
 	}
 	if strings.HasPrefix(output, "files") {
 		return createFileSink(output, opts, runID)
@@ -100,18 +104,21 @@ func ParseArgs(args []string) (*Config, error) {
 	config := &Config{}
 
 	var outputs stringSlice
-	fs := flag.NewFlagSet("basanos", flag.ContinueOnError)
-	fs.StringVar(&config.SpecDir, "s", "spec", "spec directory")
-	fs.StringVar(&config.SpecDir, "spec", "spec", "spec directory")
-	fs.Var(&outputs, "o", "output sink")
-	fs.Var(&outputs, "output", "output sink")
-	fs.StringVar(&config.Filter, "f", "", "filter pattern")
-	fs.StringVar(&config.Filter, "filter", "", "filter pattern")
-	fs.BoolVar(&config.ShowHelp, "h", false, "show help")
-	fs.BoolVar(&config.ShowHelp, "help", false, "show help")
-	fs.BoolVar(&config.ShowVersion, "v", false, "show version")
-	fs.BoolVar(&config.ShowVersion, "version", false, "show version")
-	fs.Parse(args)
+	flags := flag.NewFlagSet("basanos", flag.ContinueOnError)
+	flags.StringVar(&config.SpecDir, "s", "spec", "spec directory")
+	flags.StringVar(&config.SpecDir, "spec", "spec", "spec directory")
+	flags.Var(&outputs, "o", "output sink")
+	flags.Var(&outputs, "output", "output sink")
+	flags.StringVar(&config.Filter, "f", "", "filter pattern")
+	flags.StringVar(&config.Filter, "filter", "", "filter pattern")
+	flags.BoolVar(&config.ShowHelp, "h", false, "show help")
+	flags.BoolVar(&config.ShowHelp, "help", false, "show help")
+	flags.BoolVar(&config.ShowVersion, "v", false, "show version")
+	flags.BoolVar(&config.ShowVersion, "version", false, "show version")
+	flags.BoolVar(&config.Verbose, "verbose", false, "verbose output")
+	if err := flags.Parse(args); err != nil {
+		return nil, err
+	}
 
 	if len(outputs) == 0 {
 		config.Outputs = []string{"cli"}

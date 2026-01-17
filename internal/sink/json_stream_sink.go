@@ -10,15 +10,15 @@ type JsonStreamSink struct {
 	writer io.Writer
 }
 
-func NewJsonStreamSink(w io.Writer) Sink {
-	return &JsonStreamSink{writer: w}
+func NewJsonStreamSink(writer io.Writer) Sink {
+	return &JsonStreamSink{writer: writer}
 }
 
-func (s *JsonStreamSink) Emit(e any) error {
-	data, err := json.Marshal(e)
+func (sink *JsonStreamSink) Emit(incoming any) error {
+	data, err := json.Marshal(incoming)
 	if err != nil {
 		return err
 	}
-	_, err = fmt.Fprintf(s.writer, "%s\n", data)
+	_, err = fmt.Fprintf(sink.writer, "%s\n", data)
 	return err
 }

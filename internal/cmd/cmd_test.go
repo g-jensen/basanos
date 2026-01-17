@@ -124,6 +124,19 @@ func TestParseArgs_VersionFlag(t *testing.T) {
 	}
 }
 
+func TestParseArgs_VerboseFlag(t *testing.T) {
+	config, err := ParseArgs([]string{"--verbose"})
+
+	require.NoError(t, err)
+	assert.True(t, config.Verbose)
+}
+
+func TestParseArgs_InvalidFlag_ReturnsError(t *testing.T) {
+	_, err := ParseArgs([]string{"--invalid-flag"})
+
+	assert.Error(t, err)
+}
+
 func TestRun_ReturnsNil(t *testing.T) {
 	opts := RunOptions{
 		Config:     &Config{SpecDir: "spec", Outputs: []string{"files"}},
@@ -215,8 +228,8 @@ scenarios:
 	require.NotEmpty(t, files, "FileSink should have written output files")
 
 	var foundRunStdout bool
-	for _, f := range files {
-		if strings.HasSuffix(f, "/spec/test/_run/stdout") {
+	for _, file := range files {
+		if strings.HasSuffix(file, "/spec/test/_run/stdout") {
 			foundRunStdout = true
 			break
 		}
@@ -306,4 +319,30 @@ scenarios:
 	require.NoError(t, err)
 	require.Len(t, fakeExec.Commands, 1, "Filter should limit execution to one scenario")
 	assert.Equal(t, "echo first", fakeExec.Commands[0].Command)
+}
+
+func TestRun_VerboseFlagAffectsCLISink(t *testing.T) {
+	memFS := memfs.NewMemoryFS()
+	memFS.AddDir("spec")
+	memFS.AddFile("spec/context.yaml", []byte(`name: "Verbose Context"
+scenarios:
+  - id: test
+    name: "Test scenario"
+    run:
+      command: "echo hello"
+      timeout: "10s"
+`))
+
+	var buf bytes.Buffer
+	opts := RunOptions{
+		Config:     &Config{SpecDir: "spec", Outputs: []string{"cli"}, Verbose: true},
+		FileSystem: memFS,
+		Executor:   &fakeexec.FakeExecutor{},
+		Stdout:     &buf,
+	}
+
+	err := Run(opts)
+
+	require.NoError(t, err)
+	assert.Contains(t, buf.String(), "Verbose Context")
 }
