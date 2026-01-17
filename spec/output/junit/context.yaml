@@ -87,11 +87,20 @@ scenarios:
     assertions:
       - command: assert_contains 'exit:1' ${RUN_OUTPUT}/stdout
 
-  - id: time_attribute
+  - id: testcase_time_attribute
     name: "Includes time attribute on testcase"
     run:
       command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o junit 2>&1
       timeout: 30s
     assertions:
-      - command: assert_matches 'time="[0-9]+\.[0-9]+"' ${RUN_OUTPUT}/stdout
+      - command: assert_matches '<testcase[^>]+time="[0-9]+\.[0-9]+"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: testsuite_time_attribute
+    name: "Includes time attribute on testsuite"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o junit 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_matches '<testsuite[^>]+time="[0-9]+\.[0-9]+"' ${RUN_OUTPUT}/stdout
       - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

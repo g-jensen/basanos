@@ -21,6 +21,7 @@ type junitTestSuite struct {
 	Name     string          `xml:"name,attr"`
 	Tests    int             `xml:"tests,attr"`
 	Failures int             `xml:"failures,attr"`
+	Time     string          `xml:"time,attr"`
 	Cases    []junitTestCase `xml:"testcase"`
 }
 
@@ -42,17 +43,19 @@ type pendingCase struct {
 }
 
 type JunitSink struct {
-	writer       io.Writer
-	suites       map[string]*junitTestSuite
-	suiteOrder   []string
-	pendingCases map[string]*pendingCase
+	writer           io.Writer
+	suites           map[string]*junitTestSuite
+	suiteOrder       []string
+	pendingCases     map[string]*pendingCase
+	contextStartTime map[string]time.Time
 }
 
 func NewJunitSink(writer io.Writer) Sink {
 	return &JunitSink{
-		writer:       writer,
-		suites:       make(map[string]*junitTestSuite),
-		pendingCases: make(map[string]*pendingCase),
+		writer:           writer,
+		suites:           make(map[string]*junitTestSuite),
+		pendingCases:     make(map[string]*pendingCase),
+		contextStartTime: make(map[string]time.Time),
 	}
 }
 
@@ -60,6 +63,8 @@ func (sink *JunitSink) Emit(incoming any) error {
 	switch typed := incoming.(type) {
 	case *event.ContextEnterEvent:
 		sink.handleContextEnter(typed)
+	case *event.ContextExitEvent:
+		sink.handleContextExit(typed)
 	case *event.ScenarioEnterEvent:
 		sink.handleScenarioEnter(typed)
 	case *event.ScenarioExitEvent:
@@ -75,6 +80,14 @@ func (sink *JunitSink) handleContextEnter(enter *event.ContextEnterEvent) {
 		Name: enter.Path,
 	}
 	sink.suiteOrder = append(sink.suiteOrder, enter.Path)
+	sink.contextStartTime[enter.Path] = enter.Timestamp
+}
+
+func (sink *JunitSink) handleContextExit(exit *event.ContextExitEvent) {
+	suite := sink.suites[exit.Path]
+	startTime := sink.contextStartTime[exit.Path]
+	duration := exit.Timestamp.Sub(startTime).Seconds()
+	suite.Time = fmt.Sprintf("%.3f", duration)
 }
 
 func (sink *JunitSink) handleScenarioEnter(enter *event.ScenarioEnterEvent) {

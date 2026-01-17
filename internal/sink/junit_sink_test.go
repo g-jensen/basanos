@@ -137,3 +137,37 @@ func TestJunitSink_NestedScenarioGroups_FindsCorrectSuite(t *testing.T) {
 	require.Len(t, suite.Cases, 1)
 	assert.Equal(t, "Substring found", suite.Cases[0].Name)
 }
+
+func TestJunitSink_TestSuiteIncludesTime(t *testing.T) {
+	buffer := &bytes.Buffer{}
+	sink := NewJunitSink(buffer)
+
+	timestamp := time.Date(2026, 1, 15, 14, 30, 22, 0, time.UTC)
+	runID := "2026-01-15_143022"
+
+	sink.Emit(event.NewRunStartEvent(runID, timestamp))
+	sink.Emit(event.NewContextEnterEvent(runID, "api", "API Tests", timestamp))
+	sink.Emit(event.NewScenarioEnterEvent(runID, "api/health", "Health Check", timestamp.Add(10*time.Millisecond)))
+	sink.Emit(event.NewScenarioExitEvent(runID, "api/health", "pass", timestamp.Add(60*time.Millisecond)))
+	sink.Emit(event.NewScenarioEnterEvent(runID, "api/status", "Status Check", timestamp.Add(70*time.Millisecond)))
+	sink.Emit(event.NewScenarioExitEvent(runID, "api/status", "pass", timestamp.Add(120*time.Millisecond)))
+	sink.Emit(event.NewContextExitEvent(runID, "api", timestamp.Add(150*time.Millisecond)))
+	sink.Emit(event.NewRunEndEvent(runID, "pass", 2, 0, timestamp.Add(150*time.Millisecond)))
+
+	output := buffer.String()
+
+	var testsuites struct {
+		XMLName xml.Name `xml:"testsuites"`
+		Suites  []struct {
+			Name string `xml:"name,attr"`
+			Time string `xml:"time,attr"`
+		} `xml:"testsuite"`
+	}
+
+	err := xml.Unmarshal([]byte(output), &testsuites)
+	require.NoError(t, err, "Output should be valid XML: %s", output)
+
+	require.Len(t, testsuites.Suites, 1)
+	suite := testsuites.Suites[0]
+	assert.Equal(t, "0.150", suite.Time, "Suite time should be duration from context enter to exit")
+}
