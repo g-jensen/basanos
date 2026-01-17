@@ -48,3 +48,22 @@ func TestLoadSpecTree_TracksPath(t *testing.T) {
 	assert.Equal(t, "/spec", tree.Path)
 	assert.Equal(t, "/spec/child", tree.Children[0].Path)
 }
+
+func TestLoadContext_ReturnsErrorForInvalidSpec(t *testing.T) {
+	mfs := memfs.NewMemoryFS()
+	mfs.AddDir("/spec")
+	mfs.AddFile("/spec/context.yaml", []byte(`
+name: "Test Context"
+scenarios:
+  - name: "Missing ID"
+    run:
+      command: echo hello
+`))
+
+	_, err := LoadContext(mfs, "/spec")
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "/spec/context.yaml")
+	assert.Contains(t, err.Error(), "scenarios[0].id")
+	assert.Contains(t, err.Error(), "required")
+}

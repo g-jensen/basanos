@@ -1,6 +1,7 @@
 package tree
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"basanos/internal/fs"
@@ -14,11 +15,20 @@ type SpecTree struct {
 }
 
 func LoadContext(filesystem fs.FileSystem, dirPath string) (*spec.Context, error) {
-	data, err := filesystem.ReadFile(filepath.Join(dirPath, "context.yaml"))
+	contextFile := filepath.Join(dirPath, "context.yaml")
+	data, err := filesystem.ReadFile(contextFile)
 	if err != nil {
 		return nil, err
 	}
-	return spec.ParseContext(data)
+	ctx, err := spec.ParseContext(data)
+	if err != nil {
+		return nil, err
+	}
+	errors := spec.Validate(ctx, contextFile)
+	if len(errors) > 0 {
+		return nil, fmt.Errorf("validation failed: %s: %s: %s", errors[0].File, errors[0].Path, errors[0].Message)
+	}
+	return ctx, nil
 }
 
 func LoadSpecTree(filesystem fs.FileSystem, rootPath string) (*SpecTree, error) {
