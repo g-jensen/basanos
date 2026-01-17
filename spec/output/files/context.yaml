@@ -1,0 +1,93 @@
+name: "File Sink"
+description: "Tests for -o files output format"
+
+env:
+  TEST_RUNS: "/tmp/basanos_test_runs"
+
+before_each:
+  run: rm -rf ${TEST_RUNS}
+  timeout: 5s
+
+after_each:
+  run: rm -rf ${TEST_RUNS}
+  timeout: 5s
+
+scenarios:
+  - id: creates_run_directory
+    name: "Creates timestamped run directory"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o files:${TEST_RUNS}
+        ls ${TEST_RUNS}
+      timeout: 30s
+    assertions:
+      - command: assert_matches "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: captures_stdout
+    name: "Captures stdout to file"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o files:${TEST_RUNS}
+        cat ${TEST_RUNS}/*/spec/fixtures/minimal/simple_pass/_run/stdout
+      timeout: 30s
+    assertions:
+      - command: assert_contains "hello" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: captures_exit_code
+    name: "Captures exit code to file"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o files:${TEST_RUNS}
+        cat ${TEST_RUNS}/*/spec/fixtures/minimal/simple_pass/_run/exit_code
+      timeout: 30s
+    assertions:
+      - command: assert_equals "0" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: captures_stderr
+    name: "Captures stderr to file"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/stderr_test -o files:${TEST_RUNS}
+        cat ${TEST_RUNS}/*/spec/fixtures/stderr_test/outputs_stderr/_run/stderr
+      timeout: 30s
+    assertions:
+      - command: assert_contains "ERROR_MESSAGE" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: captures_hook_output
+    name: "Captures before/after hook output"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/lifecycle_order -o files:${TEST_RUNS}
+        cat ${TEST_RUNS}/*/spec/fixtures/lifecycle_order/_before/stdout
+      timeout: 30s
+    assertions:
+      - command: assert_contains "context_before" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: custom_output_path
+    name: "Custom path with files:PATH syntax"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o files:${TEST_RUNS}/custom
+        ls ${TEST_RUNS}/custom
+      timeout: 30s
+    assertions:
+      - command: assert_matches "[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{6}" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: nested_context_structure
+    name: "Nested contexts create nested directories"
+    run:
+      command: |
+        ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/nested_spec -o files:${TEST_RUNS}
+        find ${TEST_RUNS} -name "stdout" | sort
+      timeout: 30s
+    assertions:
+      - command: assert_contains "parent_scenario" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "child_scenario" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "child" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

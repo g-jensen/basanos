@@ -1,0 +1,11 @@
+name: "RUN_OUTPUT Test"
+description: "Fixture for testing RUN_OUTPUT variable availability"
+
+scenarios:
+  - id: check
+    name: "Check RUN_OUTPUT"
+    run:
+      command: echo "RUN_OUTPUT is ${RUN_OUTPUT}"
+      timeout: 5s
+    assertions:
+      - command: assert_matches "_run" ${RUN_OUTPUT}/stdout

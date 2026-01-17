@@ -1,0 +1,24 @@
+name: "Environment Inheritance Test"
+description: "Spec to verify environment variable inheritance and merging"
+
+env:
+  ROOT_VAR: "root_value"
+  OVERRIDE_VAR: "root_override"
+
+scenarios:
+  - id: child_env
+    name: "Child environment group"
+    env:
+      CHILD_VAR: "child_value"
+      OVERRIDE_VAR: "child_override"
+    scenarios:
+      - id: leaf
+        name: "Leaf scenario"
+        run:
+          command: |
+            echo "ROOT_VAR=${ROOT_VAR}"
+            echo "CHILD_VAR=${CHILD_VAR}"
+            echo "OVERRIDE_VAR=${OVERRIDE_VAR}"
+          timeout: 5s
+        assertions:
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

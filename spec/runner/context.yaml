@@ -1,0 +1,2 @@
+name: "Test Runner"
+description: "Tests for spec execution, lifecycle hooks, variable substitution, and failure handling"

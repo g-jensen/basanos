@@ -1,0 +1,21 @@
+name: "Continue On Failure Test"
+description: "Spec to verify on_failure: continue behavior"
+
+on_failure: continue
+
+scenarios:
+  - id: failing_scenario
+    name: "This scenario fails"
+    run:
+      command: exit 1
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: should_still_run
+    name: "This should still run despite previous failure"
+    run:
+      command: echo "CONTINUE_MARKER"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

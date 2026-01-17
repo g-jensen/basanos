@@ -1,0 +1,11 @@
+name: "Timeout Test"
+description: "Fixture for testing timeout behavior"
+
+scenarios:
+  - id: slow
+    name: "Slow scenario"
+    run:
+      command: sleep 10
+      timeout: 1s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

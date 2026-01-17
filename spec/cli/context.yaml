@@ -1,0 +1,86 @@
+name: "CLI Interface"
+description: "Command-line argument parsing, help, and version output"
+
+scenarios:
+  - id: help_short_flag
+    name: "Short help flag (-h) prints usage"
+    run:
+      command: ${BASANOS_BIN} -h
+      timeout: 5s
+    assertions:
+      - command: assert_contains "Usage:" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "--spec" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "--output" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "--filter" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: help_long_flag
+    name: "Long help flag (--help) prints usage"
+    run:
+      command: ${BASANOS_BIN} --help
+      timeout: 5s
+    assertions:
+      - command: assert_contains "Usage:" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: version_short_flag
+    name: "Short version flag (-v) prints version"
+    run:
+      command: ${BASANOS_BIN} -v
+      timeout: 5s
+    assertions:
+      - command: assert_matches "^(dev|v?[0-9]+\\.[0-9]+)" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: version_long_flag
+    name: "Long version flag (--version) prints version"
+    run:
+      command: ${BASANOS_BIN} --version
+      timeout: 5s
+    assertions:
+      - command: assert_matches "^(dev|v?[0-9]+\\.[0-9]+)" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: missing_spec_directory
+    name: "Missing spec directory produces error"
+    run:
+      command: ${BASANOS_BIN} -s /nonexistent/spec/path 2>&1
+      timeout: 5s
+    assertions:
+      - command: assert_contains "Error:" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: invalid_flag
+    name: "Invalid flag produces error"
+    run:
+      command: ${BASANOS_BIN} --invalid-flag 2>&1
+      timeout: 5s
+    assertions:
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: spec_short_flag
+    name: "Short spec flag (-s) accepts custom directory"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "run_start" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: spec_long_flag
+    name: "Long spec flag (--spec) accepts custom directory"
+    run:
+      command: ${BASANOS_BIN} --spec ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "run_start" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: multiple_output_sinks
+    name: "Multiple -o flags are all used"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json -o cli 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "run_start" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

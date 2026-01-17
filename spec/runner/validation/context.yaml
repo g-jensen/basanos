@@ -1,0 +1,95 @@
+name: "Spec Validation"
+description: "Tests for spec validation errors"
+
+scenarios:
+  - id: missing_scenario_id
+    name: "Missing scenario ID produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/missing_id -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "id" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "required" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: duplicate_scenario_ids
+    name: "Duplicate scenario IDs produce error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/duplicate_ids -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "duplicate" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: invalid_on_failure
+    name: "Invalid on_failure value produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/invalid_on_failure -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "on_failure" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: invalid_timeout_format
+    name: "Invalid timeout format produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/invalid_timeout -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "invalid" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: missing_run_command
+    name: "Missing run command produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/missing_command -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "command" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "required" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: group_with_run_block
+    name: "Group scenario with run block produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/group_with_run -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "groups cannot have run blocks" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: leaf_with_before_each
+    name: "Leaf scenario with before_each produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/leaf_before_each -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "leaf scenarios cannot have before_each" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: leaf_with_after_each
+    name: "Leaf scenario with after_each produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/leaf_after_each -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "leaf scenarios cannot have after_each" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: invalid_yaml_syntax
+    name: "Invalid YAML syntax produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/bad_yaml -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "Error" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: missing_context_yaml
+    name: "Missing context.yaml produces error"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/invalid/empty_dir -o json 2>&1
+      timeout: 10s
+    assertions:
+      - command: assert_contains "Error" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0

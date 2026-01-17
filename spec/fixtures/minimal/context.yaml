@@ -1,0 +1,12 @@
+name: "Minimal Spec"
+description: "A minimal passing spec for testing basanos itself"
+
+scenarios:
+  - id: simple_pass
+    name: "Simple passing scenario"
+    run:
+      command: echo "hello"
+      timeout: 5s
+    assertions:
+      - command: assert_contains "hello" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

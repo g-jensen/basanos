@@ -1,0 +1,49 @@
+name: "Failure Modes"
+description: "Tests for on_failure: skip_children, continue, abort_run"
+
+scenarios:
+  - id: skip_children_behavior
+    name: "skip_children stops remaining scenarios in context"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/skip_children -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "failing_scenario" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "fail" ${RUN_OUTPUT}/stdout
+
+  - id: continue_behavior
+    name: "continue runs remaining scenarios after failure"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/continue_on_failure -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "failing_scenario" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "should_still_run" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "CONTINUE_MARKER" ${RUN_OUTPUT}/stdout
+
+  - id: abort_run_behavior
+    name: "abort_run stops entire test run"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/abort_run -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "failing_scenario" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "fail" ${RUN_OUTPUT}/stdout
+
+  - id: filter_scenarios
+    name: "Filter flag runs only matching scenarios"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/filter_test -f "*/*/*/alpha_*" -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "alpha_one" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: timeout_handling
+    name: "Timeout produces timeout event"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/timeout_test -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "timeout" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "fail" ${RUN_OUTPUT}/stdout

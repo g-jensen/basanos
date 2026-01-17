@@ -1,0 +1,108 @@
+name: "assert_equals"
+description: "Tests for the assert_equals binary"
+
+before_each:
+  run: rm -f ${TEST_TMP}/expected ${TEST_TMP}/actual
+  timeout: 2s
+
+scenarios:
+  - id: literal_equals_literal_pass
+    name: "Two equal literals pass"
+    before:
+      run: |
+        printf '%s' "hello" > ${TEST_TMP}/expected
+        printf '%s' "hello" > ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: literal_equals_literal_fail
+    name: "Two different literals fail"
+    before:
+      run: |
+        printf '%s' "hello" > ${TEST_TMP}/expected
+        printf '%s' "world" > ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "Expected:" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "Actual:" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: multiline_equals_pass
+    name: "Multiline content equality passes"
+    before:
+      run: |
+        printf "line1\nline2\nline3" > ${TEST_TMP}/expected
+        printf "line1\nline2\nline3" > ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: multiline_equals_fail_shows_diff
+    name: "Multiline content difference shows diff"
+    before:
+      run: |
+        printf "line1\nline2\nline3" > ${TEST_TMP}/expected
+        printf "line1\nchanged\nline3" > ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "Diff:" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: empty_files_equal
+    name: "Two empty files are equal"
+    before:
+      run: |
+        touch ${TEST_TMP}/expected
+        touch ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: whitespace_significant
+    name: "Whitespace differences are detected"
+    before:
+      run: |
+        printf '%s' "hello" > ${TEST_TMP}/expected
+        printf '%s' "hello " > ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: newline_significant
+    name: "Trailing newline differences are detected"
+    before:
+      run: |
+        printf '%s' "hello" > ${TEST_TMP}/expected
+        echo "hello" > ${TEST_TMP}/actual
+      timeout: 2s
+    run:
+      command: ${ASSERT_EQUALS} ${TEST_TMP}/expected ${TEST_TMP}/actual
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0

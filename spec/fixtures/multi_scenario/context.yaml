@@ -1,0 +1,23 @@
+name: "Multiple Scenarios"
+description: "Fixture for testing before_each runs for each leaf"
+
+before_each:
+  run: echo "BE"
+  timeout: 5s
+
+scenarios:
+  - id: first
+    name: "First"
+    run:
+      command: echo "S1"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: second
+    name: "Second"
+    run:
+      command: echo "S2"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

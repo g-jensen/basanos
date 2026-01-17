@@ -1,0 +1,14 @@
+name: "Duplicate IDs"
+
+scenarios:
+  - id: same_id
+    name: "First"
+    run:
+      command: echo "first"
+      timeout: 5s
+
+  - id: same_id
+    name: "Second"
+    run:
+      command: echo "second"
+      timeout: 5s

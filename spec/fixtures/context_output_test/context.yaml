@@ -1,0 +1,11 @@
+name: "CONTEXT_OUTPUT Test"
+description: "Fixture for testing CONTEXT_OUTPUT variable availability"
+
+scenarios:
+  - id: check
+    name: "Check CONTEXT_OUTPUT"
+    run:
+      command: echo "CONTEXT_OUTPUT is ${CONTEXT_OUTPUT}"
+      timeout: 5s
+    assertions:
+      - command: assert_matches "runs/[0-9_-]+/.*context_output_test" ${RUN_OUTPUT}/stdout

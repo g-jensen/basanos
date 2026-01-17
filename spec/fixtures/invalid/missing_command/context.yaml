@@ -1,0 +1,7 @@
+name: "No command"
+
+scenarios:
+  - id: test
+    name: "Test"
+    run:
+      timeout: 5s

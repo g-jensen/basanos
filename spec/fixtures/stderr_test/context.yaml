@@ -1,0 +1,11 @@
+name: "Stderr Test"
+description: "Fixture for testing stderr capture"
+
+scenarios:
+  - id: outputs_stderr
+    name: "Outputs to stderr"
+    run:
+      command: echo "ERROR_MESSAGE" >&2
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

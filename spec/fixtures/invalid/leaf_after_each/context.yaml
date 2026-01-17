@@ -1,0 +1,11 @@
+name: "Leaf with after_each"
+
+scenarios:
+  - id: leaf
+    name: "Leaf"
+    after_each:
+      run: echo "bad"
+      timeout: 5s
+    run:
+      command: echo "leaf"
+      timeout: 5s

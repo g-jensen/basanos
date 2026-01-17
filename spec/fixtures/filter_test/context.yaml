@@ -1,0 +1,19 @@
+name: "Filter Test"
+description: "Fixture for testing filter flag"
+
+scenarios:
+  - id: alpha_one
+    name: "Alpha One"
+    run:
+      command: echo "ALPHA_ONE"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: beta_two
+    name: "Beta Two"
+    run:
+      command: echo "BETA_TWO"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

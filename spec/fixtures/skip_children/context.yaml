@@ -1,0 +1,21 @@
+name: "Skip Children Test"
+description: "Spec to verify on_failure: skip_children behavior"
+
+on_failure: skip_children
+
+scenarios:
+  - id: failing_scenario
+    name: "This scenario fails"
+    run:
+      command: exit 1
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: should_be_skipped
+    name: "This should be skipped"
+    run:
+      command: echo "THIS SHOULD NOT RUN"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

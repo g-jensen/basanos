@@ -1,0 +1,54 @@
+name: "CLI Reporter"
+description: "Tests for -o cli output format and verbose mode"
+
+scenarios:
+  - id: default_output_is_cli
+    name: "Default output is CLI format"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: shows_pass_indicator
+    name: "Shows pass indicator for passing tests"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_matches "(PASS|pass|\\.|\\xE2\\x9C\\x93)" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: shows_fail_indicator
+    name: "Shows fail indicator for failing tests"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/failing 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_matches "(FAIL|fail|F|\\xE2\\x9C\\x97)" ${RUN_OUTPUT}/stdout
+
+  - id: verbose_shows_names
+    name: "Verbose mode shows context and scenario names"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal --verbose 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "Minimal Spec" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: shows_summary
+    name: "Shows summary with pass/fail counts"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_matches "[0-9]+ (passed|pass)" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: failing_summary
+    name: "Shows failure count in summary"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/failing 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_matches "[0-9]+ (failed|fail)" ${RUN_OUTPUT}/stdout

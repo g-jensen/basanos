@@ -1,0 +1,19 @@
+name: "Failing Spec"
+description: "A spec that intentionally fails for testing basanos failure handling"
+
+scenarios:
+  - id: assertion_failure
+    name: "Scenario with failing assertion"
+    run:
+      command: echo "actual_value"
+      timeout: 5s
+    assertions:
+      - command: assert_equals "expected_value" ${RUN_OUTPUT}/stdout
+
+  - id: nonzero_exit
+    name: "Scenario with non-zero exit code"
+    run:
+      command: exit 42
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

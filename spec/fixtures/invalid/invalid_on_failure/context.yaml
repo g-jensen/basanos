@@ -1,0 +1,10 @@
+name: "Invalid on_failure"
+
+on_failure: invalid_value
+
+scenarios:
+  - id: test
+    name: "Test"
+    run:
+      command: echo "test"
+      timeout: 5s

@@ -77,6 +77,13 @@ func withTwoScenarios(t *tree.SpecTree) *tree.SpecTree {
 	return t
 }
 
+func withFailingAssertion(t *tree.SpecTree, scenarioIndex int) *tree.SpecTree {
+	t.Context.Scenarios[scenarioIndex].Assertions = []spec.Assertion{
+		{Command: "assert_equals expected actual", Timeout: "1s"},
+	}
+	return t
+}
+
 func withChildContext(t *tree.SpecTree, name string) *tree.SpecTree {
 	child := &tree.SpecTree{
 		Path: t.Path + "/" + name,
@@ -314,6 +321,18 @@ func TestRunner_AfterHook_EmitsHookEndEvent(t *testing.T) {
 	assert.Equal(t, "basic", events[0].Path)
 }
 
+func TestRunner_AfterHook_ExecutesAfterChildContexts(t *testing.T) {
+	specTree := withAfterHook(newSpecTree("parent"), "parent_cleanup.sh")
+	withChildContext(specTree, "child")
+
+	executor, _ := runSpec(t, specTree)
+
+	require.Len(t, executor.Commands, 3)
+	assert.Equal(t, "test_command", executor.Commands[0].Command)
+	assert.Equal(t, "child_command", executor.Commands[1].Command)
+	assert.Equal(t, "parent_cleanup.sh", executor.Commands[2].Command)
+}
+
 func TestRunner_BeforeEachHook_ExecutesBeforeEachScenario(t *testing.T) {
 	specTree := withBeforeEachHook(withTwoScenarios(newSpecTree("basic")), "reset.sh")
 
@@ -367,6 +386,32 @@ func TestRunner_AfterEachHook_ExecutesAfterEachScenario(t *testing.T) {
 	assert.Equal(t, "cleanup.sh", executor.Commands[1].Command)
 	assert.Equal(t, "cmd2", executor.Commands[2].Command)
 	assert.Equal(t, "cleanup.sh", executor.Commands[3].Command)
+}
+
+func TestRunner_ScenarioBeforeHook_ExecutesBeforeRun(t *testing.T) {
+	specTree := newSpecTree("basic")
+	specTree.Context.BeforeEach = &spec.Hook{Run: "context_before_each.sh", Timeout: "2s"}
+	specTree.Context.Scenarios[0].Before = &spec.Hook{Run: "scenario_before.sh", Timeout: "2s"}
+
+	executor, _ := runSpec(t, specTree)
+
+	require.Len(t, executor.Commands, 3)
+	assert.Equal(t, "context_before_each.sh", executor.Commands[0].Command)
+	assert.Equal(t, "scenario_before.sh", executor.Commands[1].Command)
+	assert.Equal(t, "test_command", executor.Commands[2].Command)
+}
+
+func TestRunner_ScenarioAfterHook_ExecutesAfterRun(t *testing.T) {
+	specTree := newSpecTree("basic")
+	specTree.Context.AfterEach = &spec.Hook{Run: "context_after_each.sh", Timeout: "2s"}
+	specTree.Context.Scenarios[0].After = &spec.Hook{Run: "scenario_after.sh", Timeout: "2s"}
+
+	executor, _ := runSpec(t, specTree)
+
+	require.Len(t, executor.Commands, 3)
+	assert.Equal(t, "test_command", executor.Commands[0].Command)
+	assert.Equal(t, "scenario_after.sh", executor.Commands[1].Command)
+	assert.Equal(t, "context_after_each.sh", executor.Commands[2].Command)
 }
 
 func TestRunner_Assertions_ExecutesAssertionCommands(t *testing.T) {
@@ -464,8 +509,8 @@ func TestRunner_RunWithID_CountsMultiplePassingScenarios(t *testing.T) {
 }
 
 func TestRunner_RunWithID_CountsFailedScenario(t *testing.T) {
-	specTree := newSpecTree("basic")
-	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
+	specTree := withFailingAssertion(newSpecTree("basic"), 0)
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"assert_equals": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -478,8 +523,8 @@ func TestRunner_RunWithID_CountsFailedScenario(t *testing.T) {
 }
 
 func TestRunner_RunWithID_StatusFailWhenScenarioFails(t *testing.T) {
-	specTree := newSpecTree("basic")
-	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
+	specTree := withFailingAssertion(newSpecTree("basic"), 0)
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"assert_equals": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
@@ -504,6 +549,22 @@ func TestRunner_ScenarioFailsWhenAssertionFails(t *testing.T) {
 	events := findEvents[*event.ScenarioExitEvent](sink.Events)
 	require.Len(t, events, 1)
 	assert.Equal(t, "fail", events[0].Status)
+}
+
+func TestRunner_ScenarioPassesWhenAssertionsPassDespiteNonZeroExitCode(t *testing.T) {
+	specTree := withAssertions(newSpecTree("basic"), "assert_gt exit_code 0")
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{
+		"test_command": 1,
+		"assert_gt":    0,
+	}}
+	sink := &SpySink{}
+	runner := NewRunner(executor, sink)
+
+	runner.Run(specTree)
+
+	events := findEvents[*event.ScenarioExitEvent](sink.Events)
+	require.Len(t, events, 1)
+	assert.Equal(t, "pass", events[0].Status)
 }
 
 func withGroupBeforeEach(t *tree.SpecTree, cmd string) *tree.SpecTree {
@@ -553,39 +614,42 @@ func TestRunner_AncestorBeforeEach_AllRun(t *testing.T) {
 }
 
 func TestRunner_AbortRun_StopsAfterFailure(t *testing.T) {
-	specTree := withTwoScenarios(newSpecTree("basic"))
+	specTree := withFailingAssertion(withTwoScenarios(newSpecTree("basic")), 0)
 	specTree.Context.OnFailure = "abort_run"
-	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"cmd1": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"assert_equals": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
 	runner.Run(specTree)
 
-	assert.Len(t, executor.Commands, 1)
+	assert.Len(t, executor.Commands, 2)
 }
 
 func TestRunner_AbortRun_StopsChildContexts(t *testing.T) {
 	specTree := withChildContext(newSpecTree("parent"), "child")
 	specTree.Context.OnFailure = "abort_run"
-	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"test_command": 1}}
+	specTree.Context.Scenarios[0].Assertions = []spec.Assertion{
+		{Command: "assert_equals expected actual", Timeout: "1s"},
+	}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"assert_equals": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
 	runner.Run(specTree)
 
-	assert.Len(t, executor.Commands, 1)
+	assert.Len(t, executor.Commands, 2)
 }
 
 func TestRunner_SkipChildren_SkipsRemainingScenarios(t *testing.T) {
-	specTree := withTwoScenarios(newSpecTree("basic"))
+	specTree := withFailingAssertion(withTwoScenarios(newSpecTree("basic")), 0)
 	specTree.Context.OnFailure = "skip_children"
-	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"cmd1": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"assert_equals": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
 	runner.Run(specTree)
 
-	assert.Len(t, executor.Commands, 1)
+	assert.Len(t, executor.Commands, 2)
 }
 
 func TestRunner_SkipChildren_ContinuesSiblingContexts(t *testing.T) {
@@ -594,17 +658,21 @@ func TestRunner_SkipChildren_ContinuesSiblingContexts(t *testing.T) {
 	withChildContext(specTree, "second_child")
 	specTree.Children[0].Context.OnFailure = "skip_children"
 	specTree.Children[0].Context.Scenarios[0].Run.Command = "fail_cmd"
+	specTree.Children[0].Context.Scenarios[0].Assertions = []spec.Assertion{
+		{Command: "assert_equals expected actual", Timeout: "1s"},
+	}
 	specTree.Children[1].Context.Scenarios[0].Run.Command = "sibling_cmd"
-	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"fail_cmd": 1}}
+	executor := &fakeexec.FakeExecutor{ExitCodes: map[string]int{"assert_equals": 1}}
 	sink := &SpySink{}
 	runner := NewRunner(executor, sink)
 
 	runner.Run(specTree)
 
-	require.Len(t, executor.Commands, 3)
+	require.Len(t, executor.Commands, 4)
 	assert.Equal(t, "test_command", executor.Commands[0].Command)
 	assert.Equal(t, "fail_cmd", executor.Commands[1].Command)
-	assert.Equal(t, "sibling_cmd", executor.Commands[2].Command)
+	assert.Equal(t, "assert_equals", executor.Commands[2].Command)
+	assert.Equal(t, "sibling_cmd", executor.Commands[3].Command)
 }
 
 func withEnv(t *tree.SpecTree, env map[string]string) *tree.SpecTree {

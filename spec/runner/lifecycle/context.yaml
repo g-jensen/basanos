@@ -1,0 +1,29 @@
+name: "Lifecycle Hooks"
+description: "Tests for before, after, before_each, after_each execution order"
+
+scenarios:
+  - id: hook_execution_order
+    name: "Hooks execute in correct order"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/lifecycle_order -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "context_before" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "context_before_each" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "scenario_before" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "scenario_run" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "scenario_after" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "context_after_each" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "context_after" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: before_each_runs_for_each_scenario
+    name: "before_each runs for each leaf scenario"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/multi_scenario -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_matches "BE[\\s\\S]*BE" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "S1" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "S2" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

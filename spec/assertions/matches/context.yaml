@@ -1,0 +1,121 @@
+name: "assert_matches"
+description: "Tests for the assert_matches binary (regex matching)"
+
+before_each:
+  run: rm -f ${TEST_TMP}/pattern ${TEST_TMP}/target
+  timeout: 2s
+
+scenarios:
+  - id: simple_pattern_match
+    name: "Simple regex pattern matches"
+    before:
+      run: |
+        printf '%s' "hello123world" > ${TEST_TMP}/target
+        printf '%s' "hello[0-9]+world" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: pattern_no_match
+    name: "Non-matching pattern fails"
+    before:
+      run: |
+        printf '%s' "hello_world" > ${TEST_TMP}/target
+        printf '%s' "hello[0-9]+world" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "Pattern:" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "Target:" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: anchor_start_match
+    name: "Start anchor works correctly"
+    before:
+      run: |
+        printf '%s' "hello world" > ${TEST_TMP}/target
+        printf '%s' "^hello" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: anchor_start_no_match
+    name: "Start anchor fails when not at start"
+    before:
+      run: |
+        printf '%s' "say hello" > ${TEST_TMP}/target
+        printf '%s' "^hello" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: anchor_end_match
+    name: "End anchor works correctly"
+    before:
+      run: |
+        printf '%s' "hello world" > ${TEST_TMP}/target
+        printf '%s' "world$" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: invalid_regex_fails
+    name: "Invalid regex pattern fails gracefully"
+    before:
+      run: |
+        printf '%s' "anything" > ${TEST_TMP}/target
+        printf '%s' "[invalid" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: multiline_match
+    name: "Pattern matches within multiline content"
+    before:
+      run: |
+        printf "line1\nuser_42\nline3" > ${TEST_TMP}/target
+        printf '%s' "user_[0-9]+" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: dot_matches_any
+    name: "Dot matches any character"
+    before:
+      run: |
+        printf '%s' "abc" > ${TEST_TMP}/target
+        printf '%s' "a.c" > ${TEST_TMP}/pattern
+      timeout: 2s
+    run:
+      command: ${ASSERT_MATCHES} ${TEST_TMP}/pattern ${TEST_TMP}/target
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

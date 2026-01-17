@@ -1,0 +1,8 @@
+name: "Invalid timeout"
+
+scenarios:
+  - id: test
+    name: "Test"
+    run:
+      command: echo "test"
+      timeout: not_a_duration

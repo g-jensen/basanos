@@ -1,0 +1,230 @@
+name: "Numeric Assertions"
+description: "Tests for assert_gt, assert_gte, assert_lt, assert_lte"
+
+before_each:
+  run: rm -f ${TEST_TMP}/left ${TEST_TMP}/right
+  timeout: 2s
+
+scenarios:
+  - id: greater_than
+    name: "assert_gt (greater than)"
+    scenarios:
+      - id: gt_pass
+        name: "10 > 5 passes"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "5" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: gt_equal_fail
+        name: "10 > 10 fails"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+      - id: gt_less_fail
+        name: "5 > 10 fails"
+        before:
+          run: |
+            printf '%s' "5" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+      - id: gt_decimals
+        name: "Decimal comparison works (3.14 > 3.0)"
+        before:
+          run: |
+            printf '%s' "3.14" > ${TEST_TMP}/left
+            printf '%s' "3.0" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: gt_negative
+        name: "Negative comparison works (-5 > -10)"
+        before:
+          run: |
+            printf '%s' "-5" > ${TEST_TMP}/left
+            printf '%s' "-10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: gt_invalid_number
+        name: "Non-numeric input fails gracefully"
+        before:
+          run: |
+            printf '%s' "abc" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_contains "invalid" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: greater_than_or_equal
+    name: "assert_gte (greater than or equal)"
+    scenarios:
+      - id: gte_greater_pass
+        name: "10 >= 5 passes"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "5" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GTE} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: gte_equal_pass
+        name: "10 >= 10 passes"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GTE} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: gte_less_fail
+        name: "5 >= 10 fails"
+        before:
+          run: |
+            printf '%s' "5" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_GTE} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: less_than
+    name: "assert_lt (less than)"
+    scenarios:
+      - id: lt_pass
+        name: "5 < 10 passes"
+        before:
+          run: |
+            printf '%s' "5" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_LT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: lt_equal_fail
+        name: "10 < 10 fails"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_LT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+      - id: lt_greater_fail
+        name: "10 < 5 fails"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "5" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_LT} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: less_than_or_equal
+    name: "assert_lte (less than or equal)"
+    scenarios:
+      - id: lte_less_pass
+        name: "5 <= 10 passes"
+        before:
+          run: |
+            printf '%s' "5" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_LTE} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: lte_equal_pass
+        name: "10 <= 10 passes"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "10" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_LTE} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+          - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+      - id: lte_greater_fail
+        name: "10 <= 5 fails"
+        before:
+          run: |
+            printf '%s' "10" > ${TEST_TMP}/left
+            printf '%s' "5" > ${TEST_TMP}/right
+          timeout: 2s
+        run:
+          command: ${ASSERT_LTE} ${TEST_TMP}/left ${TEST_TMP}/right
+          timeout: 5s
+        assertions:
+          - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+          - command: assert_gt ${RUN_OUTPUT}/exit_code 0

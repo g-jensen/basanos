@@ -1,0 +1,21 @@
+name: "Abort Run Test"
+description: "Spec to verify on_failure: abort_run behavior"
+
+on_failure: abort_run
+
+scenarios:
+  - id: failing_scenario
+    name: "This scenario fails"
+    run:
+      command: exit 1
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: should_not_run
+    name: "This should not run"
+    run:
+      command: echo "ABORT SHOULD HAVE STOPPED THIS"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

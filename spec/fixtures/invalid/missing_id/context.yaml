@@ -1,0 +1,7 @@
+name: "Missing ID"
+
+scenarios:
+  - name: "No ID scenario"
+    run:
+      command: echo "test"
+      timeout: 5s

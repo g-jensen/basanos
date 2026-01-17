@@ -1,0 +1,14 @@
+name: "Group with run"
+
+scenarios:
+  - id: group
+    name: "Group"
+    run:
+      command: echo "should not be here"
+      timeout: 5s
+    scenarios:
+      - id: child
+        name: "Child"
+        run:
+          command: echo "child"
+          timeout: 5s

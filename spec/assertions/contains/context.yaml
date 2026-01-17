@@ -1,0 +1,93 @@
+name: "assert_contains"
+description: "Tests for the assert_contains binary"
+
+before_each:
+  run: rm -f ${TEST_TMP}/needle ${TEST_TMP}/haystack
+  timeout: 2s
+
+scenarios:
+  - id: substring_found_pass
+    name: "Substring present passes"
+    before:
+      run: |
+        printf '%s' "needle" > ${TEST_TMP}/needle
+        printf '%s' "haystack with needle inside" > ${TEST_TMP}/haystack
+      timeout: 2s
+    run:
+      command: ${ASSERT_CONTAINS} ${TEST_TMP}/needle ${TEST_TMP}/haystack
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: substring_not_found_fail
+    name: "Substring absent fails"
+    before:
+      run: |
+        printf '%s' "missing" > ${TEST_TMP}/needle
+        printf '%s' "haystack with something else" > ${TEST_TMP}/haystack
+      timeout: 2s
+    run:
+      command: ${ASSERT_CONTAINS} ${TEST_TMP}/needle ${TEST_TMP}/haystack
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "Looking for:" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "In:" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: multiline_needle_found
+    name: "Multiline needle found in haystack"
+    before:
+      run: |
+        printf "line1\nline2" > ${TEST_TMP}/needle
+        printf "prefix\nline1\nline2\nsuffix" > ${TEST_TMP}/haystack
+      timeout: 2s
+    run:
+      command: ${ASSERT_CONTAINS} ${TEST_TMP}/needle ${TEST_TMP}/haystack
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: empty_needle_always_found
+    name: "Empty needle is always found"
+    before:
+      run: |
+        touch ${TEST_TMP}/needle
+        printf '%s' "anything" > ${TEST_TMP}/haystack
+      timeout: 2s
+    run:
+      command: ${ASSERT_CONTAINS} ${TEST_TMP}/needle ${TEST_TMP}/haystack
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: case_sensitive
+    name: "Search is case-sensitive"
+    before:
+      run: |
+        printf '%s' "NEEDLE" > ${TEST_TMP}/needle
+        printf '%s' "haystack with needle inside" > ${TEST_TMP}/haystack
+      timeout: 2s
+    run:
+      command: ${ASSERT_CONTAINS} ${TEST_TMP}/needle ${TEST_TMP}/haystack
+      timeout: 5s
+    assertions:
+      - command: assert_contains "FAIL" ${RUN_OUTPUT}/stdout
+      - command: assert_gt ${RUN_OUTPUT}/exit_code 0
+
+  - id: exact_match_found
+    name: "Exact match is a valid contains"
+    before:
+      run: |
+        printf '%s' "exact" > ${TEST_TMP}/needle
+        printf '%s' "exact" > ${TEST_TMP}/haystack
+      timeout: 2s
+    run:
+      command: ${ASSERT_CONTAINS} ${TEST_TMP}/needle ${TEST_TMP}/haystack
+      timeout: 5s
+    assertions:
+      - command: assert_contains "PASS" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

@@ -1,0 +1,34 @@
+name: "Basanos Self-Test Suite"
+description: "Acceptance tests for the basanos test framework itself"
+
+env:
+  BIN_DIR: "/tmp/basanos_bin"
+  BASANOS_BIN: "/tmp/basanos_bin/basanos"
+  ASSERT_EQUALS: "/tmp/basanos_bin/assert_equals"
+  ASSERT_CONTAINS: "/tmp/basanos_bin/assert_contains"
+  ASSERT_MATCHES: "/tmp/basanos_bin/assert_matches"
+  ASSERT_GT: "/tmp/basanos_bin/assert_gt"
+  ASSERT_GTE: "/tmp/basanos_bin/assert_gte"
+  ASSERT_LT: "/tmp/basanos_bin/assert_lt"
+  ASSERT_LTE: "/tmp/basanos_bin/assert_lte"
+  FIXTURES: "${SPEC_ROOT}/fixtures"
+
+on_failure: skip_children
+
+before:
+  run: |
+    mkdir -p ${BIN_DIR}
+    cd ${SPEC_ROOT}/..
+    go build -o ${BIN_DIR}/basanos .
+    go build -o ${BIN_DIR}/assert_equals ./cmd/assert_equals
+    go build -o ${BIN_DIR}/assert_contains ./cmd/assert_contains
+    go build -o ${BIN_DIR}/assert_matches ./cmd/assert_matches
+    go build -o ${BIN_DIR}/assert_gt ./cmd/assert_gt
+    go build -o ${BIN_DIR}/assert_gte ./cmd/assert_gte
+    go build -o ${BIN_DIR}/assert_lt ./cmd/assert_lt
+    go build -o ${BIN_DIR}/assert_lte ./cmd/assert_lte
+  timeout: 60s
+
+after:
+  run: rm -rf ${BIN_DIR}
+  timeout: 5s

@@ -1,0 +1,108 @@
+name: "JSON Stream Sink"
+description: "Tests for -o json output format"
+
+scenarios:
+  - id: emits_run_start
+    name: "Emits run_start event"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"run_start"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_run_end
+    name: "Emits run_end event with status"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"run_end"' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"status":"pass"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_context_enter
+    name: "Emits context_enter event with path and name"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"context_enter"' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"name":"Minimal Spec"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_context_exit
+    name: "Emits context_exit event"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"context_exit"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_scenario_enter
+    name: "Emits scenario_enter event"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"scenario_enter"' ${RUN_OUTPUT}/stdout
+      - command: assert_contains 'simple_pass' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_scenario_exit
+    name: "Emits scenario_exit event with status"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"scenario_exit"' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"status":"pass"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_output_events
+    name: "Emits output events for stdout/stderr"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"output"' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"stream":"stdout"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: emits_assertion_events
+    name: "Emits assertion_start and assertion_end events"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"event":"assertion_start"' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"event":"assertion_end"' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: ndjson_format
+    name: "Output is newline-delimited JSON"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1 | head -1 | python3 -c "import json,sys; json.load(sys.stdin)"
+      timeout: 30s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: run_end_counts
+    name: "run_end includes passed and failed counts"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/minimal -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"passed":1' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"failed":0' ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: failing_run_counts
+    name: "Failed run shows correct counts"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/skip_children -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains '"failed":' ${RUN_OUTPUT}/stdout
+      - command: assert_contains '"status":"fail"' ${RUN_OUTPUT}/stdout

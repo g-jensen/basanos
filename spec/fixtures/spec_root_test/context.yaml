@@ -1,0 +1,11 @@
+name: "SPEC_ROOT Test"
+description: "Fixture for testing SPEC_ROOT variable availability"
+
+scenarios:
+  - id: check
+    name: "Check SPEC_ROOT"
+    run:
+      command: echo "SPEC_ROOT is ${SPEC_ROOT}"
+      timeout: 5s
+    assertions:
+      - command: assert_contains "spec_root_test" ${RUN_OUTPUT}/stdout

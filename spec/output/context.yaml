@@ -1,0 +1,2 @@
+name: "Output Sinks"
+description: "Tests for JSON stream, file sink, and CLI reporter"

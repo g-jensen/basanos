@@ -1,0 +1,16 @@
+name: "Override Test"
+description: "Fixture for testing child env overrides parent"
+
+env:
+  VAR: "parent"
+
+scenarios:
+  - id: child
+    name: "Child"
+    env:
+      VAR: "child"
+    run:
+      command: echo "${VAR}"
+      timeout: 5s
+    assertions:
+      - command: assert_contains "child" ${RUN_OUTPUT}/stdout

@@ -1,0 +1,11 @@
+name: "Child"
+description: "Child context for testing nested structure"
+
+scenarios:
+  - id: child_scenario
+    name: "Child Scenario"
+    run:
+      command: echo "child"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

@@ -144,6 +144,7 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 	runner.emit(eventpkg.NewScenarioEnterEvent(runner.runID, scenarioPath, scenario.Name, time.Now()))
 
 	runner.runHooks(scenarioPath, "before_each", ctx.beforeEachHooks, scenarioEnv)
+	runner.runHook(scenarioPath, "before", scenario.Before, scenarioEnv)
 
 	runner.emit(eventpkg.NewScenarioRunStartEvent(runner.runID, scenarioPath))
 	stdout, stderr, exitCode, timedOut := runner.execCapture(scenario.Run.Command, scenario.Run.Timeout, scenarioEnv)
@@ -154,7 +155,7 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 
 	captured := CapturedOutput{Stdout: stdout, Stderr: stderr, ExitCode: exitCode}
 	assertionsPassed := runner.runAssertions(scenarioPath, scenario.Assertions, scenarioEnv, captured)
-	passed := exitCode == 0 && assertionsPassed && !timedOut
+	passed := assertionsPassed && !timedOut
 
 	status := "fail"
 	if passed {
@@ -168,6 +169,7 @@ func (runner *Runner) runScenario(scenarioPath string, scenario spec.Scenario, c
 		runner.failed++
 	}
 
+	runner.runHook(scenarioPath, "after", scenario.After, scenarioEnv)
 	runner.runHooks(scenarioPath, "after_each", reversed(ctx.afterEachHooks), scenarioEnv)
 
 	return passed
@@ -272,11 +274,11 @@ func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRo
 	}
 	runner.runScenarios(specTree.Path, specTree.Context.Scenarios, ctx)
 
-	runner.runHook(specTree.Path, "after", specTree.Context.After, env)
-
 	for _, child := range specTree.Children {
 		runner.runTree(child, ctx.specRoot, ctx.outputRoot, env)
 	}
+
+	runner.runHook(specTree.Path, "after", specTree.Context.After, env)
 
 	runner.emit(eventpkg.NewContextExitEvent(runner.runID, specTree.Path, time.Now()))
 

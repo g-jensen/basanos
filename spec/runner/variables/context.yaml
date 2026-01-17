@@ -1,0 +1,61 @@
+name: "Variable Substitution"
+description: "Tests for environment variable inheritance and special variables"
+
+scenarios:
+  - id: env_inheritance
+    name: "Environment variables inherit and merge correctly"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/env_inheritance -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "ROOT_VAR=root_value" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "CHILD_VAR=child_value" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "OVERRIDE_VAR=child_override" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: child_overrides_parent
+    name: "Child env values override parent"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/override_env -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "child" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: spec_root_available
+    name: "SPEC_ROOT variable is available"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/spec_root_test -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "SPEC_ROOT is" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "spec_root_test" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: context_output_available
+    name: "CONTEXT_OUTPUT variable is available"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/context_output_test -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "CONTEXT_OUTPUT is" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: scenario_output_available
+    name: "SCENARIO_OUTPUT variable is available"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/scenario_output_test -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "SCENARIO_OUTPUT is" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: run_output_available
+    name: "RUN_OUTPUT variable is available"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/run_output_test -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_contains "RUN_OUTPUT is" ${RUN_OUTPUT}/stdout
+      - command: assert_contains "_run" ${RUN_OUTPUT}/stdout
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code

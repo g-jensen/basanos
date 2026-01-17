@@ -1,0 +1,13 @@
+name: "Assertion Executables"
+description: "Tests for all assert_* binaries"
+
+env:
+  TEST_TMP: "/tmp/basanos_assert_test"
+
+before:
+  run: mkdir -p ${TEST_TMP}
+  timeout: 5s
+
+after:
+  run: rm -rf ${TEST_TMP}
+  timeout: 5s

@@ -1,0 +1,33 @@
+name: "Lifecycle Order Test"
+description: "Spec to verify hook execution order"
+
+before:
+  run: echo "context_before"
+  timeout: 5s
+
+after:
+  run: echo "context_after"
+  timeout: 5s
+
+before_each:
+  run: echo "context_before_each"
+  timeout: 5s
+
+after_each:
+  run: echo "context_after_each"
+  timeout: 5s
+
+scenarios:
+  - id: first_scenario
+    name: "First scenario"
+    before:
+      run: echo "scenario_before"
+      timeout: 5s
+    after:
+      run: echo "scenario_after"
+      timeout: 5s
+    run:
+      command: echo "scenario_run"
+      timeout: 5s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
