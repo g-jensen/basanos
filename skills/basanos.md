@@ -144,10 +144,12 @@ For a leaf scenario, hooks execute in this order:
 | Variable | Scope | Description |
 |----------|-------|-------------|
 | `${SPEC_ROOT}` | All | Absolute path to spec directory root |
-| `${CONTEXT_OUTPUT}` | Context hooks | Output directory for current context |
-| `${SCENARIO_OUTPUT}` | Scenario | Output directory for current scenario |
-| `${RUN_OUTPUT}` | Scenario | Shorthand for `${SCENARIO_OUTPUT}/_run` |
+| `${CONTEXT_OUTPUT}` | Context hooks | Logical path for captured context output (read-only in assertions) |
+| `${SCENARIO_OUTPUT}` | Scenario | Logical path for captured scenario output (read-only in assertions) |
+| `${RUN_OUTPUT}` | Scenario | Shorthand for `${SCENARIO_OUTPUT}/_run` (read-only in assertions) |
 | Custom `env` vars | Inherited | Merged down tree, child overrides parent |
+
+**CRITICAL:** `${CONTEXT_OUTPUT}`, `${SCENARIO_OUTPUT}`, and `${RUN_OUTPUT}` are **not real filesystem directories**. They are logical paths that basanos resolves internally. Shell commands cannot write to them—use real paths like `/tmp/mytest` or custom `env` variables for any files your tests need to create.
 
 ## Assertion Executables
 
@@ -265,14 +267,20 @@ scenarios:
 
 ### Setup/Teardown with Persistent State
 ```yaml
+env:
+  TEST_TMP: "/tmp/mytest"
+
 before:
   run: |
+    mkdir -p ${TEST_TMP}
     ./start-server.sh &
-    echo $! > ${CONTEXT_OUTPUT}/server.pid
+    echo $! > ${TEST_TMP}/server.pid
   timeout: 10s
 
 after:
-  run: kill $(cat ${CONTEXT_OUTPUT}/server.pid)
+  run: |
+    kill $(cat ${TEST_TMP}/server.pid) 2>/dev/null || true
+    rm -rf ${TEST_TMP}
   timeout: 5s
 ```
 
@@ -364,16 +372,17 @@ before:
   run: printf '%s' "hello" > ${TEST_TMP}/file
 ```
 
-### Output variables are logical paths, not real directories
+### Output variables are read-only
 
-`${CONTEXT_OUTPUT}`, `${SCENARIO_OUTPUT}`, and `${RUN_OUTPUT}` are logical paths that sinks use. Shell commands cannot write to them directly—they may not exist as real directories unless the `files` sink creates them.
+`${CONTEXT_OUTPUT}`, `${SCENARIO_OUTPUT}`, and `${RUN_OUTPUT}` exist only for assertions to reference captured output. They are **not writable filesystem paths**.
 
 ```yaml
-# BAD - directory may not exist
+# WRONG - these paths don't exist on disk
 before:
-  run: echo "data" > ${CONTEXT_OUTPUT}/myfile.txt
+  run: echo "data" > ${CONTEXT_OUTPUT}/myfile.txt   # FAILS
+  run: echo $! > ${RUN_OUTPUT}/server.pid           # FAILS
 
-# GOOD - use a real temp directory
+# CORRECT - use custom env vars pointing to real paths
 env:
   TEST_TMP: "/tmp/mytest"
 before:
@@ -382,7 +391,7 @@ before:
     echo "data" > ${TEST_TMP}/myfile.txt
 ```
 
-For assertions, `${RUN_OUTPUT}/stdout` works because basanos resolves it from captured output, not the filesystem.
+Assertions like `assert_equals expected.fixture ${RUN_OUTPUT}/stdout` work because basanos resolves the logical path internally—your shell never touches it.
 
 ### Glob patterns: `*` matches one segment only
 
