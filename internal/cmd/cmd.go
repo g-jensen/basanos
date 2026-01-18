@@ -39,7 +39,7 @@ type RunOptions struct {
 	FileSystem fs.FileSystem
 	Executor   executor.Executor
 	Stdout     io.Writer
-	OutputFS   sink.WritableFS
+	OutputFS   fs.WritableFS
 }
 
 type RunResult struct {
@@ -106,7 +106,7 @@ func extractFilesPath(output string) string {
 	return "runs"
 }
 
-func resolveWritableFS(outputFS sink.WritableFS, path string) sink.WritableFS {
+func resolveWritableFS(outputFS fs.WritableFS, path string) fs.WritableFS {
 	if outputFS != nil {
 		return outputFS
 	}

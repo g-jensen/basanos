@@ -4,29 +4,24 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"basanos/internal/fs"
 	"basanos/internal/sinkio"
 )
-
-type WritableFS interface {
-	WriteFile(path string, data []byte) error
-	AppendFile(path string, data []byte) error
-	ReadFile(path string) ([]byte, error)
-}
 
 type FileSinkHandler interface {
 	WriteToFileSink(w sinkio.FileSinkWriter) error
 }
 
 type FileSink struct {
-	fs           WritableFS
+	fs           fs.WritableFS
 	runID        string
 	currentPath  string
 	currentPhase string
 }
 
-func NewFileSink(fs WritableFS, runID string) *FileSink {
+func NewFileSink(filesystem fs.WritableFS, runID string) *FileSink {
 	return &FileSink{
-		fs:    fs,
+		fs:    filesystem,
 		runID: runID,
 	}
 }
