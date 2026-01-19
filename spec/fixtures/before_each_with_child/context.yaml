@@ -1,0 +1,10 @@
+name: "bug"
+description: "*_each is not called if no scenarios are present"
+
+before_each:
+  run: printf "%s" "hello" > /tmp/basanos_bug.txt
+  timeout: 10s
+
+after_each:
+  run: rm /tmp/basanos_bug.txt
+  timeout: 10s

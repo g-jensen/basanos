@@ -40,6 +40,16 @@ func newSpecTree(name string) *tree.SpecTree {
 	}
 }
 
+func newEmptySpecTree(name string) *tree.SpecTree {
+	return &tree.SpecTree{
+		Path: name,
+		Context: &spec.Context{
+			Name:      name,
+			Scenarios: []spec.Scenario{},
+		},
+	}
+}
+
 func withBeforeHook(t *tree.SpecTree, cmd string) *tree.SpecTree {
 	t.Context.Before = &spec.Hook{Run: cmd, Timeout: "5s"}
 	return t
@@ -345,6 +355,18 @@ func TestRunner_BeforeEachHook_ExecutesBeforeEachScenario(t *testing.T) {
 	assert.Equal(t, "cmd2", executor.Commands[3].Command)
 }
 
+func TestRunner_BeforeEachHook_ExecutesForChildScenario(t *testing.T) {
+	specTree := newEmptySpecTree("parent")
+	specTree = withChildContext(specTree, "child")
+	specTree = withBeforeEachHook(specTree, "cmd1")
+
+	executor, _ := runSpec(t, specTree)
+
+	require.Len(t, executor.Commands, 2)
+	assert.Equal(t, "cmd1", executor.Commands[0].Command)
+	assert.Equal(t, "child_command", executor.Commands[1].Command)
+}
+
 func TestRunner_BeforeEachHook_ExecutesWithTimeout(t *testing.T) {
 	specTree := withBeforeEachHook(withTwoScenarios(newSpecTree("basic")), "reset.sh")
 
@@ -386,6 +408,18 @@ func TestRunner_AfterEachHook_ExecutesAfterEachScenario(t *testing.T) {
 	assert.Equal(t, "cleanup.sh", executor.Commands[1].Command)
 	assert.Equal(t, "cmd2", executor.Commands[2].Command)
 	assert.Equal(t, "cleanup.sh", executor.Commands[3].Command)
+}
+
+func TestRunner_AfterEachHook_ExecutesForChildScenario(t *testing.T) {
+	specTree := newEmptySpecTree("parent")
+	specTree = withChildContext(specTree, "child")
+	specTree = withAfterEachHook(specTree, "cmd1")
+
+	executor, _ := runSpec(t, specTree)
+
+	require.Len(t, executor.Commands, 2)
+	assert.Equal(t, "child_command", executor.Commands[0].Command)
+	assert.Equal(t, "cmd1", executor.Commands[1].Command)
 }
 
 func TestRunner_ScenarioBeforeHook_ExecutesBeforeRun(t *testing.T) {
