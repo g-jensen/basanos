@@ -1,0 +1,11 @@
+name: "Basic apply operations"
+description: "Core apply functionality for single features"
+
+scenarios:
+  - id: should_pass
+    name: "Scenario that should pass due to parent's context.yaml"
+    run:
+      command: cat /tmp/basanos_bug.txt
+      timeout: 10s
+    assertions:
+      - command: assert_equals "hello" ${RUN_OUTPUT}/stdout

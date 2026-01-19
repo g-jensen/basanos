@@ -256,7 +256,10 @@ func (runner *Runner) runChildScenarios(path string, scenario spec.Scenario, ctx
 	runner.runScenarios(path, scenario.Scenarios, childCtx)
 }
 
-func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRoot string, parentEnv map[string]string) error {
+func (runner *Runner) runTree(specTree *tree.SpecTree, ctx runContext, parentEnv map[string]string) error {
+	specRoot := ctx.specRoot
+	outputRoot := ctx.outputRoot
+
 	if runner.aborted {
 		return nil
 	}
@@ -271,19 +274,19 @@ func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRo
 
 	runner.runHook(specTree.Path, "before", specTree.Context.Before, env)
 
-	ctx := runContext{
+	new_ctx := runContext{
 		runID:           runner.runID,
-		beforeEachHooks: []*spec.Hook{specTree.Context.BeforeEach},
-		afterEachHooks:  []*spec.Hook{specTree.Context.AfterEach},
+		beforeEachHooks: append(ctx.beforeEachHooks, specTree.Context.BeforeEach),
+		afterEachHooks:  append(ctx.afterEachHooks, specTree.Context.AfterEach),
 		onFailure:       specTree.Context.OnFailure,
 		env:             env,
 		specRoot:        specRoot,
 		outputRoot:      outputRoot,
 	}
-	runner.runScenarios(specTree.Path, specTree.Context.Scenarios, ctx)
+	runner.runScenarios(specTree.Path, specTree.Context.Scenarios, new_ctx)
 
 	for _, child := range specTree.Children {
-		runner.runTree(child, ctx.specRoot, ctx.outputRoot, env)
+		runner.runTree(child, new_ctx, env)
 	}
 
 	runner.runHook(specTree.Path, "after", specTree.Context.After, env)
@@ -293,8 +296,17 @@ func (runner *Runner) runTree(specTree *tree.SpecTree, specRoot string, outputRo
 	return nil
 }
 
+func initialContext(specRoot string, outputRoot string) runContext {
+	return runContext{
+		beforeEachHooks: []*spec.Hook{},
+		afterEachHooks:  []*spec.Hook{},
+		specRoot:        specRoot,
+		outputRoot:      outputRoot,
+	}
+}
+
 func (runner *Runner) Run(specTree *tree.SpecTree) error {
-	return runner.runTree(specTree, specTree.Path, "", nil)
+	return runner.runTree(specTree, initialContext(specTree.Path, ""), nil)
 }
 
 func (runner *Runner) RunWithID(runID string, specTree *tree.SpecTree) error {
@@ -305,7 +317,7 @@ func (runner *Runner) RunWithID(runID string, specTree *tree.SpecTree) error {
 	runner.aborted = false
 
 	outputRoot := "runs/" + runID
-	err := runner.runTree(specTree, specTree.Path, outputRoot, nil)
+	err := runner.runTree(specTree, initialContext(specTree.Path, outputRoot), nil)
 
 	status := "pass"
 	if runner.failed > 0 {

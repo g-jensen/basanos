@@ -27,3 +27,11 @@ scenarios:
       - command: assert_contains "S1" ${RUN_OUTPUT}/stdout
       - command: assert_contains "S2" ${RUN_OUTPUT}/stdout
       - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
+
+  - id: before_each_runs_in_child
+    name: "before_each runs in child scenarios"
+    run:
+      command: ${BASANOS_BIN} -s ${SPEC_ROOT}/fixtures/before_each_with_child -o json 2>&1
+      timeout: 30s
+    assertions:
+      - command: assert_equals 0 ${RUN_OUTPUT}/exit_code
